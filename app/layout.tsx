@@ -2,14 +2,15 @@ import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist_Mono, Mulish, Quattrocento_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const mulish = Mulish({ subsets: ["latin"], variable: "--font-sans" });
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const quattrocentoSans = Quattrocento_Sans({
   subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-heading",
 });
 
 const geistMono = Geist_Mono({
@@ -18,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Habit Tracker",
-  description: "Track your daily habits with streaks and heatmaps.",
+  title: "dots",
+  description: "A quiet way to keep your habits.",
 };
 
 export default function RootLayout({
@@ -31,7 +32,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn("h-full", "antialiased", geistMono.variable, "font-sans", mulish.variable, quattrocentoSans.variable)}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

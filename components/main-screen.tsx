@@ -3,7 +3,7 @@
 import { AppHeader } from "@/components/app-header";
 import { DayToggle } from "@/components/day-toggle";
 import { HabitIcon } from "@/components/habit-icon";
-import { Heatmap } from "@/components/heatmap";
+import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
 import { Card, CardContent } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,8 +16,6 @@ import type { Habit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import * as React from "react";
-
-const GRID_WEEKS = 18;
 
 export function MainScreen() {
   const { user } = useAuth();
@@ -44,9 +42,9 @@ export function MainScreen() {
       ) : habits && habits.length === 0 ? (
         <Empty className="flex-1">
           <EmptyHeader>
-            <EmptyTitle>No habits yet</EmptyTitle>
+            <EmptyTitle>Nothing here yet</EmptyTitle>
             <EmptyDescription>
-              Tap the + button to create your first habit.
+              Tap + to begin.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -93,7 +91,7 @@ function GridView({
             <Heatmap
               history={habit.history}
               colorHex={habit.colorHex}
-              weeks={GRID_WEEKS}
+              weeks={HEATMAP_WEEKS}
             />
           </CardContent>
         </Card>
@@ -192,7 +190,7 @@ function CompactView({
               >
                 <span className="truncate text-sm font-medium">{habit.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {streak > 0 ? `🔥 ${streak} day streak` : "No streak yet"}
+                  {streak > 0 ? `${streak} days` : "Not started"}
                 </span>
               </Link>
               <DayToggle

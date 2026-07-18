@@ -1,5 +1,5 @@
+import { type Analytics, getAnalytics, isSupported as isAnalyticsSupported } from "firebase/analytics";
 import { type FirebaseApp, getApps, initializeApp } from "firebase/app";
-import { type Analytics, isSupported as isAnalyticsSupported, getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 

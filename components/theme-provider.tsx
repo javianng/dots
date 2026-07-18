@@ -4,7 +4,7 @@ import * as React from "react";
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "habit-tracker-theme";
+const STORAGE_KEY = "dots-theme";
 
 // Runs before hydration (inlined in the root layout) so the correct theme is
 // applied before first paint.

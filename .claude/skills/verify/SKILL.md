@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Build, launch, and drive the habit-tracker app to verify changes end-to-end in the browser.
+description: Build, launch, and drive the dots app to verify changes end-to-end in the browser.
 ---
 
-# Verifying the habit tracker
+# Verifying dots
 
 ## Build & launch
 
@@ -24,7 +24,7 @@ Firestore are enabled). Drive with the Chrome tools:
   bottom (grid/list/compact); habit name → detail (26-week heatmap, month
   calendar with prev/next); pencil → edit form is prefilled; settings gear →
   Dark Mode switch flips the `.dark` class instantly and persists in
-  localStorage (`habit-tracker-theme`) across reloads; Sign Out → `/login`.
+  localStorage (`dots-theme`) across reloads; Sign Out → `/login`.
 
 ## Gotchas
 

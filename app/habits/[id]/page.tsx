@@ -1,7 +1,7 @@
 "use client";
 
 import { HabitIcon } from "@/components/habit-icon";
-import { Heatmap } from "@/components/heatmap";
+import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
 import { MonthCalendar } from "@/components/month-calendar";
 import { RequireAuth } from "@/components/require-auth";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,6 @@ import { Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-
-const DETAIL_WEEKS = 26;
 
 export default function HabitDetailPage({
   params,
@@ -63,7 +61,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate text-lg font-semibold">{habit.name}</h1>
           <p className="truncate text-sm text-muted-foreground">
-            {habit.description || "No Description"}
+            {habit.description || "No description"}
           </p>
         </div>
         <Button
@@ -82,17 +80,18 @@ function HabitDetail({ habitId }: { habitId: string }) {
           <Heatmap
             history={habit.history}
             colorHex={habit.colorHex}
-            weeks={DETAIL_WEEKS}
+            weeks={HEATMAP_WEEKS}
             showMonthLabels
+            showWeekdayLabels
           />
 
           <div className="flex items-center gap-2">
             <Badge variant="secondary">
               {habit.streakGoal
-                ? `${habit.streakGoal} Day Streak Goal`
-                : "No Streak Goal"}
+                ? `Goal: ${habit.streakGoal} days`
+                : "No goal set"}
             </Badge>
-            <Badge variant="secondary">🔥 {streak}</Badge>
+            <Badge variant="secondary">{streak} days</Badge>
             <span className="flex-1" />
             <Button
               variant="outline"

@@ -67,7 +67,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
         router.push("/");
       }
     } catch {
-      setError("Could not save the habit. Please try again.");
+      setError("Couldn't save. Try again.");
       setPending(false);
     }
   }
@@ -159,10 +159,10 @@ export function HabitForm({ habit }: { habit?: Habit }) {
               className="w-full"
             >
               <ToggleGroupItem value="step" className="flex-1">
-                Step By Step
+                Steps
               </ToggleGroupItem>
               <ToggleGroupItem value="custom" className="flex-1">
-                Custom Value
+                Custom
               </ToggleGroupItem>
             </ToggleGroup>
           </Field>

@@ -15,14 +15,15 @@ No test framework is configured yet.
 
 ## Architecture
 
-This is an early-stage scaffold (fresh `create-next-app` output) — the habit-tracker
-features have not been built yet.
+This is **dots**, a habit-tracking app built on a `create-next-app` scaffold.
 
 - **Next.js App Router** (`app/`), TypeScript, path alias `@/*` → repo root.
 - **Styling**: Tailwind CSS v4, configured via `@theme inline` in `app/globals.css`
   (no `tailwind.config`). Colors are oklch tokens with light/dark variants toggled by
-  a `.dark` class. Fonts (Geist Sans/Mono, Inter) are loaded in `app/layout.tsx` via
-  `next/font/google` and exposed as CSS variables.
+  a `.dark` class. Fonts are loaded in `app/layout.tsx` via `next/font/google` and
+  exposed as CSS variables: Quattrocento Sans for headings (`--font-heading`, applied
+  to all `h1`-`h6` via a base-layer rule in `app/globals.css`), Muli/Mulish for body
+  text (`--font-sans`), and Geist Mono (`--font-mono`, currently unused in the UI).
 - **UI components**: shadcn/ui (`components.json`, style `base-mira`), built on
   `@base-ui/react` primitives (not Radix) with `class-variance-authority` for variants
   and the `cn()` helper (`lib/utils.ts`, clsx + tailwind-merge) for class merging. Add
