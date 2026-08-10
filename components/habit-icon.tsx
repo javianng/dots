@@ -1,45 +1,19 @@
-import {
-  BookOpen,
-  Coffee,
-  Droplets,
-  Dumbbell,
-  Flower2,
-  Heart,
-  Leaf,
-  Moon,
-  Music,
-  PenLine,
-  Sun,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
-
+import { HABIT_ICONS, resolveHabitIconKey } from "@/lib/habit-icons";
 import { cn } from "@/lib/utils";
 
-const ICONS: LucideIcon[] = [
-  Dumbbell, BookOpen, Droplets, Sun, Heart, Leaf,
-  Music, PenLine, Coffee, Moon, Zap, Flower2,
-];
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
-}
-
-/** Tinted icon tile. The icon is picked deterministically from the habit id. */
+/** Tinted icon tile. Uses the habit's chosen icon, falling back to the id. */
 export function HabitIcon({
   habitId,
+  icon,
   colorHex,
   className,
 }: {
   habitId: string;
+  icon?: string;
   colorHex: string;
   className?: string;
 }) {
-  const Icon = ICONS[hashString(habitId) % ICONS.length];
+  const Icon = HABIT_ICONS[resolveHabitIconKey(icon, habitId)];
   return (
     <span
       className={cn(

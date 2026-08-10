@@ -78,7 +78,7 @@ function GridView({
                 href={`/habits/${habit.id}`}
                 className="flex min-w-0 flex-1 items-center gap-3"
               >
-                <HabitIcon habitId={habit.id} colorHex={habit.colorHex} />
+                <HabitIcon habitId={habit.id} icon={habit.icon} colorHex={habit.colorHex} />
                 <span className="truncate font-medium">{habit.name}</span>
               </Link>
               <DayToggle
@@ -143,7 +143,7 @@ function ListView({
               href={`/habits/${habit.id}`}
               className="flex min-w-0 flex-1 items-center gap-3"
             >
-              <HabitIcon habitId={habit.id} colorHex={habit.colorHex} />
+              <HabitIcon habitId={habit.id} icon={habit.icon} colorHex={habit.colorHex} />
               <span className="truncate text-sm font-medium">{habit.name}</span>
             </Link>
             {days.map((day) => {
@@ -182,7 +182,7 @@ function CompactView({
           <Card key={habit.id} className="py-3">
             <CardContent className="flex items-center gap-3 px-3">
               <Link href={`/habits/${habit.id}`} aria-label={`${habit.name} details`}>
-                <HabitIcon habitId={habit.id} colorHex={habit.colorHex} />
+                <HabitIcon habitId={habit.id} icon={habit.icon} colorHex={habit.colorHex} />
               </Link>
               <Link
                 href={`/habits/${habit.id}`}

@@ -57,7 +57,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-5 px-4 py-4 lg:max-w-4xl">
       <div className="flex items-start gap-3">
-        <HabitIcon habitId={habit.id} colorHex={habit.colorHex} className="size-12" />
+        <HabitIcon habitId={habit.id} icon={habit.icon} colorHex={habit.colorHex} className="size-12" />
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate text-lg font-semibold">{habit.name}</h1>
           <p className="truncate text-sm text-muted-foreground">
