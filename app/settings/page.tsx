@@ -1,9 +1,9 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
+import { ReminderSettings } from "@/components/reminder-settings";
 import { RequireAuth } from "@/components/require-auth";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,6 @@ function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [reminders, setReminders] = React.useState(false);
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 px-4 py-4">
@@ -74,14 +73,7 @@ function SettingsScreen() {
             />
           </Field>
           <Separator />
-          <Field orientation="horizontal">
-            <FieldLabel htmlFor="reminders">Reminders</FieldLabel>
-            <Switch
-              id="reminders"
-              checked={reminders}
-              onCheckedChange={setReminders}
-            />
-          </Field>
+          {user && <ReminderSettings uid={user.uid} />}
         </CardContent>
       </Card>
 

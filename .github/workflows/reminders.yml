@@ -1,0 +1,50 @@
+name: Send reminders
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub may start scheduled runs a few minutes late.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Send to every subscribed user now, ignoring their reminder time"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Log what would be sent without sending"
+        type: boolean
+        default: false
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scripts/reminders
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/reminders/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - run: npm test
+
+      - name: Send due reminders
+        run: npm run send
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          FORCE: ${{ inputs.force && 'true' || 'false' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
