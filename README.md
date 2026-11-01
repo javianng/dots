@@ -64,8 +64,9 @@ the Home Screen from Safari and opened from there.
    - `FIREBASE_SERVICE_ACCOUNT`: the full service account JSON
    - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`: from step 1
    - `VAPID_SUBJECT`: `mailto:you@example.com`
-5. Make sure your Firestore rules let a signed-in user write their own
-   `users/{uid}` doc and `users/{uid}/pushSubscriptions/{id}`.
+5. Publish the Firestore rules in `firestore.rules` (paste them into Firebase
+   console → Firestore → Rules, or run
+   `npx firebase-tools deploy --only firestore:rules`).
 6. Merge to the default branch (scheduled workflows only run from there). To
    test, run **Send reminders** manually from the Actions tab with `force` on.
 

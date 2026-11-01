@@ -22,6 +22,7 @@ import {
   signUpWithEmail,
   useAuth,
 } from "@/hooks/use-auth";
+import { nav } from "@/lib/transitions";
 import { cn } from "@/lib/utils";
 
 function friendlyAuthError(error: unknown): string {
@@ -106,12 +107,14 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
         </blockquote>
       </div>
 
-      <div className="flex flex-col p-6 lg:p-10">
+      <div className="flex flex-col p-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] lg:p-10">
         <div className="flex items-center justify-between gap-4">
           <Logo className="lg:hidden" />
           <Link
             href={mode === "login" ? "/signup" : "/login"}
-            className={cn(buttonVariants({ variant: "ghost" }), "ml-auto")}
+            transitionTypes={nav("fade")}
+            replace
+            className={cn(buttonVariants({ variant: "ghost" }), "ml-auto rounded-full")}
           >
             {mode === "login" ? "Sign Up" : "Login"}
           </Link>
@@ -120,10 +123,10 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
         <div className="flex flex-1 items-center justify-center py-12">
           <div className="flex w-full max-w-sm flex-col gap-6">
             <div className="flex flex-col gap-1 text-center">
-              <h1 className="text-2xl font-bold tracking-tight">
+              <h1 className="text-[28px] leading-tight font-bold tracking-tight">
                 {mode === "login" ? "Welcome back" : "Create an account"}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[15px] text-muted-foreground">
                 {mode === "login"
                   ? "Enter your email below to sign in to your account"
                   : "Enter your email below to create your account"}

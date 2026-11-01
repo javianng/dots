@@ -1,16 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Share } from "lucide-react";
+import { Bell, Clock, Share } from "lucide-react";
 
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Divider, Group, Row, RowIcon } from "@/components/grouped-list";
+import { FieldError } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import {
   DEFAULT_REMINDER_TIME,
@@ -80,50 +74,72 @@ export function ReminderSettings({ uid }: { uid: string }) {
 
   const unavailable = support !== "supported";
 
+  let footer: React.ReactNode = "A daily nudge if you haven't filled in today's dots.";
+  if (support === "ios-needs-install") {
+    footer = (
+      <>
+        To get reminders on iPhone or iPad, tap{" "}
+        <Share className="inline size-3.5 -translate-y-px" aria-label="Share" /> in
+        Safari, choose <strong className="font-semibold">Add to Home Screen</strong>, then
+        open dots from your Home Screen.
+      </>
+    );
+  } else if (support === "unsupported") {
+    footer = "This browser doesn't support notifications.";
+  }
+
   return (
-    <div className="flex flex-col gap-3">
-      <Field orientation="horizontal">
-        <FieldContent>
-          <FieldLabel htmlFor="reminders">Reminders</FieldLabel>
-          <FieldDescription>
-            A daily nudge if you haven&apos;t filled in today&apos;s dots.
-          </FieldDescription>
-        </FieldContent>
+    <Group
+      label="Notifications"
+      footer={
+        <>
+          {footer}
+          {error && <FieldError className="mt-1.5">{error}</FieldError>}
+        </>
+      }
+    >
+      <Row
+        label="Daily Reminder"
+        htmlFor="reminders"
+        icon={
+          <RowIcon className="bg-[#ff3b30]">
+            <Bell />
+          </RowIcon>
+        }
+      >
         <Switch
           id="reminders"
           checked={enabled}
           disabled={support === null || unavailable || busy}
           onCheckedChange={handleToggle}
         />
-      </Field>
-
-      {enabled && (
-        <Field orientation="horizontal">
-          <FieldLabel htmlFor="reminder-time">Remind me at</FieldLabel>
-          <Input
-            id="reminder-time"
-            type="time"
-            value={time}
-            onChange={(e) => handleTimeChange(e.target.value)}
-            className="w-28"
-          />
-        </Field>
-      )}
-
-      {support === "ios-needs-install" && (
-        <p className="text-xs/relaxed text-muted-foreground">
-          To get reminders on iPhone or iPad, add dots to your Home Screen: tap{" "}
-          <Share className="inline size-3.5 align-text-bottom" aria-label="Share" />{" "}
-          in Safari, choose <strong>Add to Home Screen</strong>, then open dots
-          from there.
-        </p>
-      )}
-      {support === "unsupported" && (
-        <p className="text-xs/relaxed text-muted-foreground">
-          This browser doesn&apos;t support notifications.
-        </p>
-      )}
-      {error && <FieldError>{error}</FieldError>}
-    </div>
+      </Row>
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-(--ease-ios)"
+        style={{ gridTemplateRows: enabled ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <Divider inset={58} />
+          <Row
+            label="Time"
+            htmlFor="reminder-time"
+            icon={
+              <RowIcon className="bg-[#ff9500]">
+                <Clock />
+              </RowIcon>
+            }
+          >
+            <input
+              id="reminder-time"
+              type="time"
+              value={time}
+              tabIndex={enabled ? 0 : -1}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className="rounded-lg bg-foreground/[0.07] px-2.5 py-1 text-[17px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+          </Row>
+        </div>
+      </div>
+    </Group>
   );
 }

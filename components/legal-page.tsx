@@ -1,4 +1,5 @@
-import { Logo } from "@/components/logo";
+import { BackButton } from "@/components/back-button";
+import { PageTransition } from "@/lib/transitions";
 
 export function LegalPage({
   title,
@@ -10,14 +11,18 @@ export function LegalPage({
   children: React.ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
-      <Logo />
-      <h1 className="mt-12 text-3xl font-bold tracking-tight">{title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Last updated: {updated}
-      </p>
-      <div className="mt-10 space-y-10">{children}</div>
-    </main>
+    <PageTransition>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-5 pb-16">
+        <header className="material bar-edge pt-safe sticky top-0 z-20 -mx-5 px-5">
+          <div className="flex h-14 items-center">
+            <BackButton />
+          </div>
+        </header>
+        <h1 className="mt-4 text-[34px] leading-tight font-bold tracking-tight">{title}</h1>
+        <p className="mt-1 text-[15px] text-muted-foreground">Last updated: {updated}</p>
+        <div className="mt-8 space-y-8">{children}</div>
+      </main>
+    </PageTransition>
   );
 }
 
@@ -30,8 +35,8 @@ export function LegalSection({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-bold">{title}</h2>
-      <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+      <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+      <div className="space-y-3 text-[15px] leading-relaxed text-muted-foreground">
         {children}
       </div>
     </section>

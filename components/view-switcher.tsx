@@ -1,12 +1,23 @@
 "use client";
 
-import { LayoutGrid, List, Rows3 } from "lucide-react";
+import { LayoutGrid, List, Rows3, type LucideIcon } from "lucide-react";
+import * as React from "react";
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { haptic } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
 
 export type ViewTab = "grid" | "list" | "compact";
 
-/** Floating pill segmented control for switching the main view. */
+const TABS: { value: ViewTab; label: string; Icon: LucideIcon }[] = [
+  { value: "grid", label: "Grid view", Icon: LayoutGrid },
+  { value: "list", label: "List view", Icon: List },
+  { value: "compact", label: "Compact view", Icon: Rows3 },
+];
+
+/**
+ * Floating glass segmented control. The selection thumb glides between
+ * segments on a spring, like UISegmentedControl.
+ */
 export function ViewSwitcher({
   value,
   onChange,
@@ -14,27 +25,50 @@ export function ViewSwitcher({
   value: ViewTab;
   onChange: (tab: ViewTab) => void;
 }) {
+  const index = Math.max(
+    0,
+    TABS.findIndex((t) => t.value === value)
+  );
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 flex justify-center">
-      <ToggleGroup
-        value={[value]}
-        onValueChange={(next: unknown[]) => {
-          const tab = next[0] as ViewTab | undefined;
-          if (tab) onChange(tab);
-        }}
-        spacing={1}
-        className="pointer-events-auto rounded-full border bg-card p-1 shadow-lg"
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center pb-[calc(env(safe-area-inset-bottom)+16px)]"
+      style={{ viewTransitionName: "view-switcher" }}
+    >
+      <div
+        role="radiogroup"
+        aria-label="Layout"
+        className="material-thick pointer-events-auto relative grid grid-cols-3 rounded-full p-1 shadow-[0_8px_30px_-6px_oklch(0_0_0/0.22)] ring-1 ring-black/5 dark:ring-white/10"
       >
-        <ToggleGroupItem value="grid" aria-label="Grid view" className="rounded-full">
-          <LayoutGrid />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="list" aria-label="List view" className="rounded-full">
-          <List />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="compact" aria-label="Compact view" className="rounded-full">
-          <Rows3 />
-        </ToggleGroupItem>
-      </ToggleGroup>
+        <span
+          aria-hidden="true"
+          className="absolute top-1 bottom-1 left-1 w-12 rounded-full bg-background shadow-[0_1px_3px_oklch(0_0_0/0.12)] transition-transform duration-500 ease-(--ease-spring) dark:bg-white/15"
+          style={{ transform: `translateX(${index * 100}%)` }}
+        />
+        {TABS.map(({ value: tab, label, Icon }) => {
+          const selected = tab === value;
+          return (
+            <button
+              key={tab}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={label}
+              onClick={() => {
+                if (selected) return;
+                haptic();
+                onChange(tab);
+              }}
+              className={cn(
+                "relative z-10 flex h-10 w-12 items-center justify-center rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                selected ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              <Icon className="size-[18px]" strokeWidth={selected ? 2.25 : 2} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

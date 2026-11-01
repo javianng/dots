@@ -1,10 +1,13 @@
 import { HabitForm } from "@/components/habit-form";
 import { RequireAuth } from "@/components/require-auth";
+import { PageTransition } from "@/lib/transitions";
 
 export default function NewHabitPage() {
   return (
-    <RequireAuth>
-      <HabitForm />
-    </RequireAuth>
+    <PageTransition>
+      <RequireAuth>
+        <HabitForm />
+      </RequireAuth>
+    </PageTransition>
   );
 }

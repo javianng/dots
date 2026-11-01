@@ -30,7 +30,7 @@ interface HistorySnapshot {
  * subcollection merged into a `history` map. Firestore latency compensation
  * makes local toggles show up immediately (optimistic updates for free).
  */
-export function useHabits(uid: string | undefined) {
+function useHabitsRealtime(uid: string | undefined) {
   const [metaSnap, setMetaSnap] = React.useState<MetaSnapshot | null>(null);
   const [historySnap, setHistorySnap] = React.useState<HistorySnapshot | null>(
     null
@@ -93,4 +93,31 @@ export function useHabits(uid: string | undefined) {
   }, [metas, historySnap, uid]);
 
   return { habits, loading: habits === null };
+}
+
+const HabitsContext = React.createContext<{
+  habits: Habit[] | null;
+  loading: boolean;
+}>({ habits: null, loading: true });
+
+/**
+ * Keeps one realtime subscription for the signed-in user at the app root, so
+ * moving between screens shows data instantly (no skeleton flash), which is
+ * what lets page transitions feel native.
+ */
+export function HabitsProvider({
+  uid,
+  children,
+}: {
+  uid: string | undefined;
+  children: React.ReactNode;
+}) {
+  const value = useHabitsRealtime(uid);
+  return (
+    <HabitsContext.Provider value={value}>{children}</HabitsContext.Provider>
+  );
+}
+
+export function useHabits() {
+  return React.useContext(HabitsContext);
 }

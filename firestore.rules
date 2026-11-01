@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// dots: each signed-in user can only read and write their own data.
+// The reminders sender (scripts/reminders) uses the Admin SDK, which
+// bypasses these rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Profile + reminder settings (users/{uid}.reminder)
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // habits, habits/{id}/completions, pushSubscriptions
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

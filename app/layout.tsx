@@ -1,6 +1,6 @@
+import { AppProviders } from "@/components/app-providers";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
-import { AuthProvider } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Mulish, Quattrocento_Sans } from "next/font/google";
@@ -33,9 +33,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3efea" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1a1a" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f3f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
 };
 
@@ -55,7 +56,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AppProviders>{children}</AppProviders>
           <ServiceWorkerRegister />
         </ThemeProvider>
       </body>

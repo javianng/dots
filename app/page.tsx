@@ -1,10 +1,13 @@
 import { MainScreen } from "@/components/main-screen";
 import { RequireAuth } from "@/components/require-auth";
+import { PageTransition } from "@/lib/transitions";
 
 export default function Home() {
   return (
-    <RequireAuth>
-      <MainScreen />
-    </RequireAuth>
+    <PageTransition>
+      <RequireAuth>
+        <MainScreen />
+      </RequireAuth>
+    </PageTransition>
   );
 }
