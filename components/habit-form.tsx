@@ -16,6 +16,7 @@ import {
   DEFAULT_HABIT_ICON,
   HABIT_ICON_KEYS,
   HABIT_ICONS,
+  resolveHabitIconKey,
 } from "@/lib/habit-icons";
 import { createHabit, updateHabit } from "@/lib/habits";
 import { DEFAULT_HABIT_COLOR, HABIT_PALETTE } from "@/lib/palette";
@@ -35,7 +36,9 @@ export function HabitForm({ habit }: { habit?: Habit }) {
 
   const [name, setName] = React.useState(habit?.name ?? "");
   const [description, setDescription] = React.useState(habit?.description ?? "");
-  const [icon, setIcon] = React.useState(habit?.icon ?? DEFAULT_HABIT_ICON);
+  const [icon, setIcon] = React.useState(
+    habit ? resolveHabitIconKey(habit.icon, habit.id) : DEFAULT_HABIT_ICON
+  );
   const [colorHex, setColorHex] = React.useState(habit?.colorHex ?? DEFAULT_HABIT_COLOR);
   const [streakGoal, setStreakGoal] = React.useState(
     habit?.streakGoal ? String(habit.streakGoal) : ""

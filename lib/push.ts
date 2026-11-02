@@ -177,8 +177,10 @@ export async function disableReminders(uid: string) {
   const subscription = await getDeviceSubscription();
   if (subscription) {
     const id = await subscriptionId(subscription.endpoint);
-    await deleteDoc(doc(subscriptionsCollection(uid), id));
+    // Unsubscribe first: it stops pushes even if the delete below can't reach
+    // Firestore, and the sender removes the dead subscription on its next send.
     await subscription.unsubscribe().catch(() => undefined);
+    await deleteDoc(doc(subscriptionsCollection(uid), id));
   }
 
   const remaining = await getDocs(subscriptionsCollection(uid));

@@ -179,6 +179,12 @@ function EmptyState() {
   );
 }
 
+function streakLabel(habit: Habit) {
+  const streak = currentStreak(habit.history);
+  if (streak > 0) return `${streak}-day streak`;
+  return Object.values(habit.history).some(Boolean) ? "No current streak" : "Not started";
+}
+
 function riseProps(animateIn: boolean, i: number) {
   return animateIn
     ? { className: "animate-rise", style: { "--i": i } as React.CSSProperties }
@@ -232,7 +238,6 @@ function GridView({
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       {habits.map((habit, i) => {
         const rise = riseProps(animateIn, i);
-        const streak = currentStreak(habit.history);
         return (
           <Card key={habit.id} className={cn("py-4", rise.className)} style={rise.style}>
             <CardContent className="flex flex-col gap-3.5 px-4">
@@ -241,9 +246,7 @@ function GridView({
                   <Icon habit={habit} />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-[15px] font-semibold">{habit.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {streak > 0 ? `${streak}-day streak` : "Not started"}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
                   </span>
                 </HabitLink>
                 <DayToggle
@@ -347,19 +350,15 @@ function CompactView({
     <Card
       className={cn("mx-auto w-full max-w-xl gap-0 py-0", animateIn && "animate-rise")}
     >
-      {habits.map((habit, i) => {
-        const streak = currentStreak(habit.history);
-        return (
-          <React.Fragment key={habit.id}>
+      {habits.map((habit, i) => (
+        <React.Fragment key={habit.id}>
           {i > 0 && <div className="ml-[60px] h-px bg-border" />}
           <div className="flex items-center gap-3 py-2.5 pr-3 pl-3">
             <HabitLink habit={habit} className="flex min-w-0 flex-1 items-center gap-3">
               <Icon habit={habit} className="size-9" />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[15px] font-medium">{habit.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {streak > 0 ? `${streak}-day streak` : "Not started"}
-                </span>
+                <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
               </span>
             </HabitLink>
             <DayToggle
@@ -369,9 +368,8 @@ function CompactView({
               label={`Mark ${habit.name} done today`}
             />
           </div>
-          </React.Fragment>
-        );
-      })}
+        </React.Fragment>
+      ))}
     </Card>
   );
 }
