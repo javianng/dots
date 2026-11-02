@@ -4,6 +4,7 @@ export interface Habit {
   id: string;
   name: string;
   description: string;
+  icon?: string;
   colorHex: string;
   streakGoal: number | null;
   completionsPerDay: number;
@@ -16,6 +17,7 @@ export interface Habit {
 export interface HabitDraft {
   name: string;
   description: string;
+  icon: string;
   colorHex: string;
   streakGoal: number | null;
   completionsPerDay: number;

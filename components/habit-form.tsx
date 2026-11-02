@@ -12,6 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/hooks/use-auth";
 import { haptic } from "@/lib/haptics";
+import {
+  DEFAULT_HABIT_ICON,
+  HABIT_ICON_KEYS,
+  HABIT_ICONS,
+} from "@/lib/habit-icons";
 import { createHabit, updateHabit } from "@/lib/habits";
 import { DEFAULT_HABIT_COLOR, HABIT_PALETTE } from "@/lib/palette";
 import { nav } from "@/lib/transitions";
@@ -30,6 +35,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
 
   const [name, setName] = React.useState(habit?.name ?? "");
   const [description, setDescription] = React.useState(habit?.description ?? "");
+  const [icon, setIcon] = React.useState(habit?.icon ?? DEFAULT_HABIT_ICON);
   const [colorHex, setColorHex] = React.useState(habit?.colorHex ?? DEFAULT_HABIT_COLOR);
   const [streakGoal, setStreakGoal] = React.useState(
     habit?.streakGoal ? String(habit.streakGoal) : ""
@@ -58,6 +64,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
     const draft: HabitDraft = {
       name: name.trim(),
       description: description.trim(),
+      icon,
       colorHex,
       streakGoal: Number.isFinite(goal) && goal > 0 ? goal : null,
       completionsPerDay,
@@ -130,6 +137,42 @@ export function HabitForm({ habit }: { habit?: Habit }) {
               rows={2}
               className={cn(bareInput, "h-auto min-h-12 py-3")}
             />
+          </Group>
+
+          <Group label="Icon">
+            <div className="grid grid-cols-7 gap-x-2 gap-y-3 p-4">
+              {HABIT_ICON_KEYS.map((key) => {
+                const Icon = HABIT_ICONS[key];
+                const selected = icon === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Icon ${key}`}
+                    aria-pressed={selected}
+                    onClick={() => {
+                      haptic();
+                      setIcon(key);
+                    }}
+                    className={cn(
+                      "pressable flex aspect-square w-full items-center justify-center rounded-full text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      selected && "ring-[2.5px] ring-offset-[3px] ring-offset-card"
+                    )}
+                    style={
+                      selected
+                        ? ({
+                            backgroundColor: `${colorHex}29`,
+                            color: colorHex,
+                            "--tw-ring-color": colorHex,
+                          } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
+                    <Icon className="size-5" />
+                  </button>
+                );
+              })}
+            </div>
           </Group>
 
           <Group label="Color">

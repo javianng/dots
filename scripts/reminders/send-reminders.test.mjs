@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { isDue, localNow, parseTime, reminderMessage } from "./send-reminders.mjs";
+import {
+  isDue,
+  localNow,
+  parseTime,
+  reminderMessage,
+  shouldMarkSent,
+} from "./send-reminders.mjs";
 
 // 2026-11-01 12:10 UTC = 20:10 in Singapore.
 const now = new Date("2026-11-01T12:10:00Z");
@@ -28,6 +34,14 @@ test("isDue respects time, window, lastSentDate and enabled", () => {
   assert.equal(isDue({ ...base, enabled: false }, now).due, false);
   assert.equal(isDue({ ...base, timezone: "Not/AZone", time: "12:00" }, now).due, true); // falls back to UTC
   assert.equal(isDue({ ...base, time: "23:00", lastSentDate: "2026-11-01" }, now, true).due, true);
+});
+
+test("shouldMarkSent retries total failures and ignores forced runs", () => {
+  assert.equal(shouldMarkSent({ delivered: 1, failed: 0 }), true);
+  assert.equal(shouldMarkSent({ delivered: 1, failed: 1 }), true); // don't re-notify the device that got it
+  assert.equal(shouldMarkSent({ delivered: 0, failed: 0 }), true); // no live subscriptions
+  assert.equal(shouldMarkSent({ delivered: 0, failed: 2 }), false);
+  assert.equal(shouldMarkSent({ force: true, delivered: 1, failed: 0 }), false);
 });
 
 test("reminderMessage", () => {

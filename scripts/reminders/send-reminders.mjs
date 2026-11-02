@@ -87,6 +87,15 @@ export function reminderMessage(remaining, total) {
     : `${remaining} habits left to fill in today.`;
 }
 
+/**
+ * Whether to record today's reminder as sent. If every push failed, leave it
+ * unset so the next run retries. FORCE runs are tests and must not use up the
+ * real reminder for the day.
+ */
+export function shouldMarkSent({ force = false, delivered, failed }) {
+  return !force && (delivered > 0 || failed === 0);
+}
+
 async function countRemaining(db, uid, dateKey) {
   const habits = await db.collection(`users/${uid}/habits`).get();
   if (habits.empty) return { total: 0, remaining: 0 };
@@ -148,6 +157,9 @@ async function main() {
       tag: `dots-reminder-${dateKey}`,
     });
 
+    let delivered = 0;
+    let failed = 0;
+
     for (const sub of subs.docs) {
       const { endpoint, keys } = sub.data();
       if (DRY_RUN) {
@@ -157,18 +169,22 @@ async function main() {
       try {
         await webpush.sendNotification({ endpoint, keys }, payload, { TTL: 60 * 60 * 6 });
         sent++;
+        delivered++;
       } catch (err) {
         if (err.statusCode === 404 || err.statusCode === 410) {
           // Subscription expired or was revoked; clean it up.
           await sub.ref.delete();
           removed++;
         } else {
+          failed++;
           console.error(`Push failed for ${user.id}: ${err.statusCode ?? ""} ${err.body ?? err.message}`);
         }
       }
     }
 
-    if (!DRY_RUN) await user.ref.update({ "reminder.lastSentDate": dateKey });
+    if (!DRY_RUN && shouldMarkSent({ force: FORCE, delivered, failed })) {
+      await user.ref.update({ "reminder.lastSentDate": dateKey });
+    }
   }
 
   console.log(`Sent ${sent} notification(s), removed ${removed} expired subscription(s).`);

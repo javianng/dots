@@ -55,7 +55,7 @@ export function ReminderSettings({ uid }: { uid: string }) {
       .then(() => setEnabled(checked))
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Something went wrong.");
-        setEnabled(false);
+        setEnabled(!checked);
       })
       .finally(() => setBusy(false));
   }

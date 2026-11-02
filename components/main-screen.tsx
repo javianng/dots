@@ -208,7 +208,12 @@ function HabitLink({
 function Icon({ habit, className }: { habit: Habit; className?: string }) {
   return (
     <HabitIconTransition habitId={habit.id}>
-      <HabitIcon habitId={habit.id} colorHex={habit.colorHex} className={className} />
+      <HabitIcon
+        habitId={habit.id}
+        icon={habit.icon}
+        colorHex={habit.colorHex}
+        className={className}
+      />
     </HabitIconTransition>
   );
 }

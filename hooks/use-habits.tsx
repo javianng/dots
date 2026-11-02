@@ -47,6 +47,7 @@ function useHabitsRealtime(uid: string | undefined) {
             id: d.id,
             name: (data.name as string) ?? "",
             description: (data.description as string) ?? "",
+            icon: data.icon as string | undefined,
             colorHex: (data.colorHex as string) ?? "#8b5cf6",
             streakGoal: (data.streakGoal as number | null) ?? null,
             completionsPerDay: (data.completionsPerDay as number) ?? 1,

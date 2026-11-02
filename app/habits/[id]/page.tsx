@@ -90,6 +90,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
         <HabitIconTransition habitId={habit.id}>
           <HabitIcon
             habitId={habit.id}
+            icon={habit.icon}
             colorHex={habit.colorHex}
             className="size-16 rounded-2xl [&_svg]:size-8"
           />
