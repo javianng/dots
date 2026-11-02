@@ -13,6 +13,9 @@ import {
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { disableReminders } from "@/lib/push";
+
+const REMINDER_CLEANUP_TIMEOUT_MS = 3000;
 
 interface AuthContextValue {
   user: User | null;
@@ -78,5 +81,15 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutUser() {
+  // A signed-out device shouldn't keep getting this account's reminders. This
+  // needs the session, so it runs first; Firestore writes wait forever offline,
+  // so it's capped to never block signing out.
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    await Promise.race([
+      disableReminders(uid).catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, REMINDER_CLEANUP_TIMEOUT_MS)),
+    ]);
+  }
   await signOut(auth);
 }
