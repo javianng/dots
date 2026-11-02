@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
 import { currentStreak, lastNDays, toDateKey, todayKey } from "@/lib/dates";
 import { checkIn, dayCount } from "@/lib/check-in";
+import { habitHref } from "@/lib/routes";
 import { HabitIconTransition, nav } from "@/lib/transitions";
 import type { Habit } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -202,7 +203,7 @@ function HabitLink({
 }) {
   return (
     <Link
-      href={`/habits/${habit.id}`}
+      href={habitHref(habit.id)}
       transitionTypes={nav("push")}
       className={cn("tappable outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-ring/50", className)}
     >

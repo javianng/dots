@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { SyncStatus } from "@/components/sync-status";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { HabitsProvider } from "@/hooks/use-habits";
@@ -15,6 +16,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <UserHabits>{children}</UserHabits>
+      <SyncStatus />
       <Toaster
         position="top-center"
         offset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
