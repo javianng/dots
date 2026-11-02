@@ -1,0 +1,17 @@
+{
+  "name": "dots-reminders",
+  "private": true,
+  "type": "module",
+  "description": "Sends daily dots habit reminders over Web Push (run by GitHub Actions).",
+  "scripts": {
+    "send": "node send-reminders.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "web-push": "^3.6.7"
+  }
+}

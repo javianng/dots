@@ -52,15 +52,15 @@ export function MonthCalendar({
         // Tint the cell itself: the ghost day button is transparent, so the
         // tint shows through and its hover overlay still reads as feedback.
         completed:
-          "bg-(--habit-tint) [&_button]:text-white [&_button]:hover:text-white",
+          "bg-(--habit-tint) [&_button]:font-semibold [&_button]:text-white [&_button]:hover:text-white",
       }}
       onDayClick={(day, modifiers) => {
         if (!modifiers.disabled) onToggleDay(toDateKey(day));
       }}
-      className="w-full p-0 [--cell-size:--spacing(10)]"
+      className="w-full p-0 [--cell-radius:9999px] [--cell-size:--spacing(10)] [&_button[data-day]]:text-[15px] [&_button[data-day]]:transition-[background-color,transform] [&_button[data-day]]:duration-200 [&_button[data-day]:active]:scale-90"
       classNames={{
         root: "w-full",
-        today: "rounded-(--cell-radius) [&_button]:ring-2 [&_button]:ring-foreground",
+        today: "rounded-(--cell-radius) [&_button]:font-bold [&_button]:ring-2 [&_button]:ring-(--habit-tint)",
       }}
       style={{ "--habit-tint": colorHex } as React.CSSProperties}
     />

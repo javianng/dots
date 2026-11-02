@@ -1,7 +1,8 @@
+import { AppProviders } from "@/components/app-providers";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
-import { AuthProvider } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Mulish, Quattrocento_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -21,6 +22,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "dots",
   description: "A quiet way to keep your habits.",
+  appleWebApp: {
+    capable: true,
+    title: "dots",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f3f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({
@@ -39,7 +56,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AppProviders>{children}</AppProviders>
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

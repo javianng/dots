@@ -49,30 +49,31 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Grouped background (warm system gray) with white cards, like iOS. */
+  --background: oklch(0.968 0.005 75);
+  --foreground: oklch(0.17 0.004 75);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.17 0.004 75);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.17 0.004 75);
+  --primary: oklch(0.2 0.006 270);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --secondary: oklch(0.94 0.004 75);
+  --secondary-foreground: oklch(0.2 0.006 270);
+  --muted: oklch(0.935 0.005 75);
+  --muted-foreground: oklch(0.54 0.006 75);
+  --accent: oklch(0.94 0.004 75);
+  --accent-foreground: oklch(0.2 0.006 270);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.9 0.005 75);
+  --input: oklch(0.9 0.005 75);
+  --ring: oklch(0.7 0.006 75);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -81,26 +82,34 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Motion: iOS sheet/push curve and a gentle spring. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.104 26.9%, 1.087 30.4%, 1.002 41.1%, 0.983 46.6%, 0.991 61.5%, 1);
+  --duration-push: 480ms;
+  --duration-sheet: 520ms;
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 2px 8px -2px oklch(0 0 0 / 0.05);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  /* iOS dark: true-black base with elevated gray cards. */
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.97 0.003 75);
+  --card: oklch(0.215 0.004 286);
+  --card-foreground: oklch(0.97 0.003 75);
+  --popover: oklch(0.24 0.004 286);
+  --popover-foreground: oklch(0.97 0.003 75);
+  --primary: oklch(0.95 0.004 75);
+  --primary-foreground: oklch(0.2 0.006 270);
+  --secondary: oklch(0.285 0.004 286);
+  --secondary-foreground: oklch(0.97 0.003 75);
+  --muted: oklch(0.285 0.004 286);
+  --muted-foreground: oklch(0.7 0.004 286);
+  --accent: oklch(0.285 0.004 286);
+  --accent-foreground: oklch(0.97 0.003 75);
+  --destructive: oklch(0.68 0.2 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -115,22 +124,271 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --shadow-card: none;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
-  }
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* Controls shouldn't select text or double-tap zoom on iOS. */
+  button,
+  a,
+  [role="button"],
+  [role="checkbox"],
+  [role="switch"] {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+}
+
+@layer utilities {
+  /* Soft press-down feedback, like tapping a native control. */
+  .pressable {
+    transition: transform 220ms var(--ease-ios), opacity 220ms var(--ease-ios);
+  }
+  .pressable:active {
+    transform: scale(0.97);
+  }
+  /* Row highlight on tap, like an iOS table cell. */
+  .tappable {
+    transition: opacity 180ms ease-out;
+  }
+  .tappable:active {
+    opacity: 0.6;
+  }
+  /* Translucent bar material (navigation bar / floating controls). */
+  .material {
+    background-color: color-mix(in oklch, var(--background) 72%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  .material-thick {
+    background-color: color-mix(in oklch, var(--card) 90%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+  }
+  /* Nav bar hairline appears once content scrolls under it (scroll-driven). */
+  .bar-edge {
+    border-bottom: 1px solid transparent;
+  }
+  @supports (animation-timeline: scroll()) {
+    .bar-edge {
+      animation: bar-edge linear both;
+      animation-timeline: scroll();
+      animation-range: 0 24px;
+    }
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* First-load entrance for lists: staggered rise. */
+  .animate-rise {
+    animation: rise 520ms var(--ease-ios) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+  /* Checkbox "pop" when a habit is checked. */
+  .animate-pop {
+    animation: pop 420ms var(--ease-spring) both;
+  }
+  /* Stroke-draw for check marks (path must set pathLength="1"). */
+  .check-draw path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 360ms var(--ease-ios) 120ms forwards;
+  }
+}
+
+/* Navigation bar hairline fades in once content scrolls under it. */
+@keyframes bar-edge {
+  to {
+    border-bottom-color: var(--border);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.82);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Page transitions (React <ViewTransition>, see lib/transitions.tsx)  */
+/* push/pop: drill into a habit and back. sheet: modal screens.         */
+/* ------------------------------------------------------------------ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* The incoming page (or outgoing sheet) sits on top. */
+::view-transition-group(.push-in),
+::view-transition-group(.pop-out),
+::view-transition-group(.sheet-up-in),
+::view-transition-group(.sheet-down-out) {
+  z-index: 2;
+}
+
+::view-transition-new(.push-in) {
+  animation: var(--duration-push) var(--ease-ios) both vt-from-right;
+}
+::view-transition-old(.push-out) {
+  animation: var(--duration-push) var(--ease-ios) both vt-to-left;
+}
+::view-transition-old(.pop-out) {
+  animation: var(--duration-push) var(--ease-ios) both vt-to-right;
+}
+::view-transition-new(.pop-in) {
+  animation: var(--duration-push) var(--ease-ios) both vt-from-left;
+}
+
+::view-transition-new(.sheet-up-in) {
+  animation: var(--duration-sheet) var(--ease-ios) both vt-from-bottom;
+}
+::view-transition-old(.sheet-up-out) {
+  transform-origin: 50% 0;
+  animation: var(--duration-sheet) var(--ease-ios) both vt-recede;
+}
+::view-transition-old(.sheet-down-out) {
+  animation: 420ms var(--ease-ios) both vt-to-bottom;
+}
+::view-transition-new(.sheet-down-in) {
+  transform-origin: 50% 0;
+  animation: 420ms var(--ease-ios) both vt-emerge;
+}
+
+::view-transition-old(.fade-out) {
+  animation: 160ms ease-out both vt-fade-out;
+}
+::view-transition-new(.fade-in) {
+  animation: 240ms ease-out 80ms both vt-fade-in;
+}
+
+/* Shared habit icon morph and view-switch crossfades. */
+::view-transition-group(.morph) {
+  animation-duration: var(--duration-push);
+  animation-timing-function: var(--ease-ios);
+}
+
+/* The floating view switcher fades instead of sliding with the page. */
+::view-transition-group(view-switcher) {
+  z-index: 3;
+  animation-duration: 260ms;
+}
+
+@keyframes vt-from-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes vt-to-left {
+  to {
+    transform: translateX(-28%);
+    filter: brightness(0.88);
+  }
+}
+@keyframes vt-to-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes vt-from-left {
+  from {
+    transform: translateX(-28%);
+    filter: brightness(0.88);
+  }
+}
+@keyframes vt-from-bottom {
+  from {
+    transform: translateY(100vh);
+  }
+}
+@keyframes vt-to-bottom {
+  to {
+    transform: translateY(100vh);
+  }
+}
+@keyframes vt-recede {
+  to {
+    transform: translateY(12px) scale(0.94);
+    filter: brightness(0.8);
+  }
+}
+@keyframes vt-emerge {
+  from {
+    transform: translateY(12px) scale(0.94);
+    filter: brightness(0.8);
+  }
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .animate-rise,
+  .animate-pop,
+  .check-draw path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+  .pressable:active {
+    transform: none;
   }
 }

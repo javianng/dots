@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone reminder sender with its own dependencies.
+    "scripts/reminders/node_modules/**",
   ]),
 ]);
 

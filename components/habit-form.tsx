@@ -1,21 +1,17 @@
 "use client";
 
-import { Check, Minus, Plus, X } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Divider, Group, Row } from "@/components/grouped-list";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/hooks/use-auth";
+import { haptic } from "@/lib/haptics";
 import {
   DEFAULT_HABIT_ICON,
   HABIT_ICON_KEYS,
@@ -23,9 +19,14 @@ import {
 } from "@/lib/habit-icons";
 import { createHabit, updateHabit } from "@/lib/habits";
 import { DEFAULT_HABIT_COLOR, HABIT_PALETTE } from "@/lib/palette";
+import { nav } from "@/lib/transitions";
 import type { Habit, HabitDraft, TrackingType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const bareInput =
+  "h-12 rounded-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0 dark:bg-transparent";
+
+/** New / Edit habit, presented as an iOS-style sheet with grouped sections. */
 export function HabitForm({ habit }: { habit?: Habit }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -35,9 +36,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const [name, setName] = React.useState(habit?.name ?? "");
   const [description, setDescription] = React.useState(habit?.description ?? "");
   const [icon, setIcon] = React.useState(habit?.icon ?? DEFAULT_HABIT_ICON);
-  const [colorHex, setColorHex] = React.useState(
-    habit?.colorHex ?? DEFAULT_HABIT_COLOR
-  );
+  const [colorHex, setColorHex] = React.useState(habit?.colorHex ?? DEFAULT_HABIT_COLOR);
   const [streakGoal, setStreakGoal] = React.useState(
     habit?.streakGoal ? String(habit.streakGoal) : ""
   );
@@ -50,9 +49,15 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
+  const canSave = name.trim().length > 0 && !pending;
+
+  function dismiss(href = backHref) {
+    router.push(href, { transitionTypes: nav("sheetDown") });
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!user) return;
+    if (!user || !canSave) return;
     setError(null);
     setPending(true);
     const goal = parseInt(streakGoal, 10);
@@ -68,11 +73,11 @@ export function HabitForm({ habit }: { habit?: Habit }) {
     try {
       if (isEdit) {
         await updateHabit(user.uid, habit.id, draft);
-        router.push(`/habits/${habit.id}`);
       } else {
         await createHabit(user.uid, draft);
-        router.push("/");
       }
+      haptic("success");
+      dismiss(isEdit ? `/habits/${habit.id}` : "/");
     } catch {
       setError("Couldn't save. Try again.");
       setPending(false);
@@ -80,48 +85,62 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 px-4 py-4">
-      <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
-        <Button
-          variant="ghost"
-          size="icon-lg"
-          aria-label="Back"
-          onClick={() => router.push(backHref)}
-        >
-          <X />
-        </Button>
-        <h1 className="text-center text-lg font-semibold">
-          {isEdit ? "Edit Habit" : "New Habit"}
-        </h1>
-      </div>
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pb-10">
+      <form id="habit-form" onSubmit={handleSubmit} className="contents">
+        <header className="material bar-edge pt-safe sticky top-0 z-20 -mx-4 px-2">
+          <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center">
+            <button
+              type="button"
+              onClick={() => dismiss()}
+              className="tappable justify-self-start rounded-full px-3 py-2 text-[17px]"
+            >
+              Cancel
+            </button>
+            <h1 className="font-sans text-[17px] font-semibold">
+              {isEdit ? "Edit Habit" : "New Habit"}
+            </h1>
+            <button
+              type="submit"
+              disabled={!canSave}
+              className="tappable flex items-center gap-2 justify-self-end rounded-full px-3 py-2 text-[17px] font-semibold disabled:opacity-35"
+            >
+              {pending && <Spinner className="size-4" />}
+              {isEdit ? "Done" : "Add"}
+            </button>
+          </div>
+        </header>
 
-      <form onSubmit={handleSubmit}>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="habit-name">Name</FieldLabel>
+        <div className="flex flex-col gap-7 pt-4">
+          <Group>
+            <label htmlFor="habit-name" className="sr-only">
+              Name
+            </label>
             <Input
               id="habit-name"
-              placeholder="e.g. Read 10 pages"
+              placeholder="Name, e.g. Read 10 pages"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus={!isEdit}
+              enterKeyHint="done"
               required
+              className={bareInput}
             />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="habit-description">Description</FieldLabel>
+            <Divider />
+            <label htmlFor="habit-description" className="sr-only">
+              Description
+            </label>
             <Textarea
               id="habit-description"
-              placeholder="Optional"
+              placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={2}
+              className={cn(bareInput, "h-auto min-h-12 py-3")}
             />
-          </Field>
+          </Group>
 
-          <Field>
-            <FieldLabel>Icon</FieldLabel>
-            <div className="grid grid-cols-7 gap-2">
+          <Group label="Icon">
+            <div className="grid grid-cols-7 gap-x-2 gap-y-3 p-4">
               {HABIT_ICON_KEYS.map((key) => {
                 const Icon = HABIT_ICONS[key];
                 const selected = icon === key;
@@ -131,16 +150,21 @@ export function HabitForm({ habit }: { habit?: Habit }) {
                     type="button"
                     aria-label={`Icon ${key}`}
                     aria-pressed={selected}
-                    onClick={() => setIcon(key)}
+                    onClick={() => {
+                      haptic();
+                      setIcon(key);
+                    }}
                     className={cn(
-                      "flex aspect-square w-full items-center justify-center rounded-lg border transition-transform outline-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring/50",
-                      selected
-                        ? "border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-background"
-                        : "border-border text-muted-foreground"
+                      "pressable flex aspect-square w-full items-center justify-center rounded-full text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      selected && "ring-[2.5px] ring-offset-[3px] ring-offset-card"
                     )}
                     style={
                       selected
-                        ? { backgroundColor: `${colorHex}29`, color: colorHex }
+                        ? ({
+                            backgroundColor: `${colorHex}29`,
+                            color: colorHex,
+                            "--tw-ring-color": colorHex,
+                          } as React.CSSProperties)
                         : undefined
                     }
                   >
@@ -149,99 +173,134 @@ export function HabitForm({ habit }: { habit?: Habit }) {
                 );
               })}
             </div>
-          </Field>
+          </Group>
 
-          <Field>
-            <FieldLabel>Color</FieldLabel>
-            <div className="grid grid-cols-7 gap-2">
-              {HABIT_PALETTE.map((hex) => (
-                <button
-                  key={hex}
-                  type="button"
-                  aria-label={`Color ${hex}`}
-                  aria-pressed={colorHex === hex}
-                  onClick={() => setColorHex(hex)}
-                  className={cn(
-                    "flex aspect-square w-full items-center justify-center rounded-lg text-white transition-transform outline-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring/50",
-                    colorHex === hex && "ring-2 ring-foreground ring-offset-2 ring-offset-background"
-                  )}
-                  style={{ backgroundColor: hex }}
-                >
-                  {colorHex === hex && <Check className="size-4" />}
-                </button>
-              ))}
+          <Group label="Color">
+            <div className="grid grid-cols-7 gap-x-2 gap-y-3 p-4">
+              {HABIT_PALETTE.map((hex) => {
+                const selected = colorHex === hex;
+                return (
+                  <button
+                    key={hex}
+                    type="button"
+                    aria-label={`Color ${hex}`}
+                    aria-pressed={selected}
+                    onClick={() => {
+                      haptic();
+                      setColorHex(hex);
+                    }}
+                    className={cn(
+                      "pressable flex aspect-square w-full items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      selected && "ring-[2.5px] ring-offset-[3px] ring-offset-card"
+                    )}
+                    style={
+                      {
+                        backgroundColor: hex,
+                        "--tw-ring-color": hex,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {selected && <Check className="size-4" strokeWidth={3} />}
+                  </button>
+                );
+              })}
             </div>
-          </Field>
+          </Group>
 
-          <Field>
-            <FieldLabel htmlFor="habit-streak-goal">Streak Goal</FieldLabel>
-            <Input
-              id="habit-streak-goal"
-              type="number"
-              min={1}
-              placeholder="None"
-              value={streakGoal}
-              onChange={(e) => setStreakGoal(e.target.value)}
-            />
-          </Field>
-
-          <Field>
-            <FieldLabel>Tracking</FieldLabel>
-            <ToggleGroup
-              value={[trackingType]}
-              onValueChange={(next: unknown[]) => {
-                const mode = next[0] as TrackingType | undefined;
-                if (mode) setTrackingType(mode);
-              }}
-              variant="outline"
-              spacing={0}
-              className="w-full"
-            >
-              <ToggleGroupItem value="step" className="flex-1">
-                Steps
-              </ToggleGroupItem>
-              <ToggleGroupItem value="custom" className="flex-1">
-                Custom
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </Field>
-
-          <Field>
-            <FieldLabel>Completions Per Day</FieldLabel>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-lg"
-                aria-label="Decrease completions per day"
-                disabled={completionsPerDay <= 1}
-                onClick={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
+          <Group label="Goal">
+            <Row label="Streak goal" htmlFor="habit-streak-goal">
+              <div className="flex items-center gap-1.5">
+                <input
+                  id="habit-streak-goal"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="None"
+                  value={streakGoal}
+                  onChange={(e) => setStreakGoal(e.target.value)}
+                  className="w-16 bg-transparent text-right text-[17px] text-muted-foreground tabular-nums outline-none placeholder:text-muted-foreground/60 focus:text-foreground"
+                />
+                <span className="text-[15px] text-muted-foreground">days</span>
+              </div>
+            </Row>
+            <Divider />
+            <Row label="Tracking">
+              <ToggleGroup
+                value={[trackingType]}
+                onValueChange={(next: unknown[]) => {
+                  const mode = next[0] as TrackingType | undefined;
+                  if (mode) setTrackingType(mode);
+                }}
+                spacing={0}
+                className="rounded-[9px] bg-foreground/[0.07] p-0.5"
               >
-                <Minus />
-              </Button>
-              <span className="w-8 text-center text-sm font-medium">
-                {completionsPerDay}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-lg"
-                aria-label="Increase completions per day"
-                onClick={() => setCompletionsPerDay((n) => n + 1)}
-              >
-                <Plus />
-              </Button>
-            </div>
-          </Field>
+                {(["step", "custom"] as const).map((mode) => (
+                  <ToggleGroupItem
+                    key={mode}
+                    value={mode}
+                    className="h-8 rounded-[7px] px-3.5 text-[13px] font-medium transition-[background-color,box-shadow] duration-200 hover:bg-transparent aria-pressed:bg-card aria-pressed:shadow-[0_1px_3px_oklch(0_0_0/0.12)] dark:aria-pressed:bg-white/20"
+                  >
+                    {mode === "step" ? "Steps" : "Custom"}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </Row>
+            <Divider />
+            <Row label="Per day">
+              <div className="flex items-center gap-3">
+                <span className="w-6 text-right text-[17px] text-muted-foreground tabular-nums">
+                  {completionsPerDay}
+                </span>
+                <div className="flex h-8 items-center rounded-[9px] bg-foreground/[0.07]">
+                  <StepperButton
+                    label="Decrease completions per day"
+                    disabled={completionsPerDay <= 1}
+                    onClick={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
+                  >
+                    <Minus />
+                  </StepperButton>
+                  <span className="h-4 w-px bg-foreground/15" />
+                  <StepperButton
+                    label="Increase completions per day"
+                    onClick={() => setCompletionsPerDay((n) => n + 1)}
+                  >
+                    <Plus />
+                  </StepperButton>
+                </div>
+              </div>
+            </Row>
+          </Group>
 
-          {error && <FieldError>{error}</FieldError>}
-
-          <Button type="submit" size="lg" className="w-full" disabled={pending}>
-            {pending && <Spinner data-icon="inline-start" />}
-            Save
-          </Button>
-        </FieldGroup>
+          {error && <FieldError className="px-4">{error}</FieldError>}
+        </div>
       </form>
     </main>
+  );
+}
+
+function StepperButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => {
+        haptic();
+        onClick();
+      }}
+      className="tappable flex h-8 w-11 items-center justify-center disabled:opacity-30 [&_svg]:size-4"
+    >
+      {children}
+    </button>
   );
 }
