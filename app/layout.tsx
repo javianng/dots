@@ -3,20 +3,17 @@ import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Mulish, Quattrocento_Sans } from "next/font/google";
+import { Inter, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
 
-const mulish = Mulish({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const quattrocentoSans = Quattrocento_Sans({
+// Chinese companion to Inter (javian ng brand); loaded on demand.
+const notoSansSC = Noto_Sans_SC({
+  weight: ["400", "600"],
   subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-heading",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-noto-sc",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -35,8 +32,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f3f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f2ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#131211" },
   ],
 };
 
@@ -49,7 +46,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("h-full", "antialiased", geistMono.variable, "font-sans", mulish.variable, quattrocentoSans.variable)}
+      className={cn("h-full", "antialiased", "font-sans", inter.variable, notoSansSC.variable)}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

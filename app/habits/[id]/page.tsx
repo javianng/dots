@@ -17,6 +17,7 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { habitTint } from "@/lib/palette";
 
 export default function HabitDetailPage({
   params,
@@ -190,7 +191,10 @@ function Stat({
         <span className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-foreground/10">
           <span
             className="block h-full origin-left rounded-full transition-transform duration-700 ease-(--ease-spring)"
-            style={{ backgroundColor: colorHex, transform: `scaleX(${progress})` }}
+            style={{
+              backgroundColor: colorHex ? habitTint(colorHex) : undefined,
+              transform: `scaleX(${progress})`,
+            }}
           />
         </span>
       )}

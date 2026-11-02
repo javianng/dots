@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { currentStreak, todayKey } from "@/lib/dates";
 import { haptic } from "@/lib/haptics";
 import type { Habit } from "@/lib/types";
+import { habitTint } from "@/lib/palette";
+import { cn } from "@/lib/utils";
 
 function subtitleFor(habit: Habit, streak: number, isToday: boolean) {
   if (habit.streakGoal && streak === habit.streakGoal) {
@@ -34,8 +36,11 @@ export function celebrateCompletion(habit: Habit, dateKey: string) {
         className="flex w-fit max-w-[min(22rem,calc(100vw-2rem))] items-center gap-3 rounded-full border border-black/5 bg-popover/80 py-2 pr-5 pl-2 text-popover-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10"
       >
         <span
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-white"
-          style={{ backgroundColor: habit.colorHex }}
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-full text-(--on-tint)",
+            goalReached && "shadow-(--shadow-now)"
+          )}
+          style={{ backgroundColor: habitTint(habit.colorHex) }}
         >
           <svg
             viewBox="0 0 24 24"

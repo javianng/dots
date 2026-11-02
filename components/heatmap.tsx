@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { heatmapWeeks, MONTH_LABELS, toDateKey } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { habitTint, habitTintAlpha } from "@/lib/palette";
 
 // Monday-first rows; labels on Tue/Thu/Sat like GitHub's contribution graph.
 const WEEKDAY_ROW_LABELS = ["", "Tue", "", "Thu", "", "Sat", ""];
@@ -77,15 +78,17 @@ export function Heatmap({
                   key={key}
                   title={key}
                   className={cn(
-                    "aspect-square w-full rounded-[3px]",
+                    "aspect-square w-full rounded-squircle",
                     !completed && !isCurrentMonth && "bg-muted",
-                    isFuture && "opacity-40"
+                    isFuture && "opacity-40",
+                    // Persimmon marks "now": today's dot.
+                    key === todayKey && "relative z-10 ring-[1.5px] ring-accent ring-offset-1 ring-offset-card"
                   )}
                   style={
                     completed
-                      ? { backgroundColor: colorHex }
+                      ? { backgroundColor: habitTint(colorHex) }
                       : isCurrentMonth
-                        ? { backgroundColor: `${colorHex}29` }
+                        ? { backgroundColor: habitTintAlpha(colorHex, 16) }
                         : undefined
                   }
                 />

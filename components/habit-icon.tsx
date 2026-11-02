@@ -1,5 +1,6 @@
 import { HABIT_ICONS, resolveHabitIconKey } from "@/lib/habit-icons";
 import { cn } from "@/lib/utils";
+import { habitTint, habitTintAlpha } from "@/lib/palette";
 
 /** Tinted icon tile. Uses the habit's chosen icon, falling back to the id. */
 export function HabitIcon({
@@ -17,10 +18,10 @@ export function HabitIcon({
   return (
     <span
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-lg",
+        "flex size-10 shrink-0 items-center justify-center rounded-squircle",
         className
       )}
-      style={{ backgroundColor: `${colorHex}29`, color: colorHex }}
+      style={{ backgroundColor: habitTintAlpha(colorHex, 16), color: habitTint(colorHex) }}
     >
       <Icon className="size-5" />
     </span>
