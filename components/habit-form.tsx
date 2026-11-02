@@ -16,6 +16,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DEFAULT_HABIT_ICON,
+  HABIT_ICON_KEYS,
+  HABIT_ICONS,
+} from "@/lib/habit-icons";
 import { createHabit, updateHabit } from "@/lib/habits";
 import { DEFAULT_HABIT_COLOR, HABIT_PALETTE } from "@/lib/palette";
 import type { Habit, HabitDraft, TrackingType } from "@/lib/types";
@@ -29,6 +34,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
 
   const [name, setName] = React.useState(habit?.name ?? "");
   const [description, setDescription] = React.useState(habit?.description ?? "");
+  const [icon, setIcon] = React.useState(habit?.icon ?? DEFAULT_HABIT_ICON);
   const [colorHex, setColorHex] = React.useState(
     habit?.colorHex ?? DEFAULT_HABIT_COLOR
   );
@@ -53,6 +59,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
     const draft: HabitDraft = {
       name: name.trim(),
       description: description.trim(),
+      icon,
       colorHex,
       streakGoal: Number.isFinite(goal) && goal > 0 ? goal : null,
       completionsPerDay,
@@ -110,6 +117,38 @@ export function HabitForm({ habit }: { habit?: Habit }) {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
+          </Field>
+
+          <Field>
+            <FieldLabel>Icon</FieldLabel>
+            <div className="grid grid-cols-7 gap-2">
+              {HABIT_ICON_KEYS.map((key) => {
+                const Icon = HABIT_ICONS[key];
+                const selected = icon === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Icon ${key}`}
+                    aria-pressed={selected}
+                    onClick={() => setIcon(key)}
+                    className={cn(
+                      "flex aspect-square w-full items-center justify-center rounded-lg border transition-transform outline-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring/50",
+                      selected
+                        ? "border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                        : "border-border text-muted-foreground"
+                    )}
+                    style={
+                      selected
+                        ? { backgroundColor: `${colorHex}29`, color: colorHex }
+                        : undefined
+                    }
+                  >
+                    <Icon className="size-5" />
+                  </button>
+                );
+              })}
+            </div>
           </Field>
 
           <Field>
