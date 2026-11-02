@@ -66,7 +66,7 @@ function SettingsScreen() {
             label="Dark Mode"
             htmlFor="dark-mode"
             icon={
-              <RowIcon className="bg-[#5856d6]">
+              <RowIcon className="bg-[#4a58a8]">
                 <Moon />
               </RowIcon>
             }
@@ -86,7 +86,7 @@ function SettingsScreen() {
             href="/privacy"
             label="Privacy Policy"
             icon={
-              <RowIcon className="bg-[#007aff]">
+              <RowIcon className="bg-[#4f5d70]">
                 <Shield />
               </RowIcon>
             }
@@ -96,7 +96,7 @@ function SettingsScreen() {
             href="/terms"
             label="Terms of Service"
             icon={
-              <RowIcon className="bg-[#8e8e93]">
+              <RowIcon className="bg-[#22242e] dark:bg-[#5c5a55]">
                 <FileText />
               </RowIcon>
             }

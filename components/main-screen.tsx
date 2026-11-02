@@ -145,7 +145,10 @@ function ProgressRing({ value }: { value: number }) {
         strokeLinecap="round"
         strokeDasharray={c}
         strokeDashoffset={c * (1 - value)}
-        className="stroke-foreground transition-[stroke-dashoffset] duration-700 ease-(--ease-spring)"
+        className={cn(
+          "transition-[stroke-dashoffset,stroke] duration-700 ease-(--ease-spring)",
+          value >= 1 ? "stroke-accent" : "stroke-foreground"
+        )}
         style={{ opacity: value === 0 ? 0 : 1 }}
       />
     </svg>
@@ -156,10 +159,10 @@ function EmptyState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 py-16 text-center">
       <div className="grid grid-cols-2 gap-1.5" aria-hidden="true">
-        <span className="size-7 rounded-[9px] bg-foreground" />
-        <span className="size-7 rounded-[9px] bg-foreground/40" />
-        <span className="size-7 rounded-[9px] bg-foreground/25" />
-        <span className="size-7 rounded-[9px] border-2 border-dashed border-foreground/30" />
+        <span className="size-7 rounded-squircle bg-foreground" />
+        <span className="size-7 rounded-squircle bg-muted-foreground" />
+        <span className="size-7 rounded-squircle bg-subtle-foreground" />
+        <span className="size-7 rounded-squircle border-2 border-dashed border-accent" />
       </div>
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-bold tracking-tight">No habits yet</h1>
@@ -297,7 +300,7 @@ function ListView({
               <span
                 className={cn(
                   "mt-0.5 flex size-5 items-center justify-center rounded-full",
-                  isToday && "bg-foreground text-background"
+                  isToday && "bg-accent text-accent-foreground"
                 )}
               >
                 {day.getDate()}

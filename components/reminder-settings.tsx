@@ -102,7 +102,7 @@ export function ReminderSettings({ uid }: { uid: string }) {
         label="Daily Reminder"
         htmlFor="reminders"
         icon={
-          <RowIcon className="bg-[#ff3b30]">
+          <RowIcon className="bg-[#b8502f]">
             <Bell />
           </RowIcon>
         }
@@ -124,7 +124,7 @@ export function ReminderSettings({ uid }: { uid: string }) {
             label="Time"
             htmlFor="reminder-time"
             icon={
-              <RowIcon className="bg-[#ff9500]">
+              <RowIcon className="bg-[#9c6b12]">
                 <Clock />
               </RowIcon>
             }

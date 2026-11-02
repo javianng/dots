@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <style>
-    .bg { fill: #f3efea; }
-    .ink { fill: #000211; }
-    .mid { fill: #5e5e5e; }
-    .soft { fill: #858480; }
+    .bg { fill: #f5f2ec; }
+    .ink { fill: #16171c; }
+    .mid { fill: #5c5a55; }
+    .soft { fill: #8a8780; }
     @media (prefers-color-scheme: dark) {
-      .bg { fill: #1c1c1e; }
-      .ink { fill: #f3efea; }
-      .mid { fill: #9a9893; }
-      .soft { fill: #6b6a66; }
+      .bg { fill: #1f1e1c; }
+      .ink { fill: #f2efe8; }
+      .mid { fill: #a6a39c; }
+      .soft { fill: #77746e; }
     }
   </style>
   <rect class="bg" width="64" height="64" rx="15"/>

@@ -20,7 +20,13 @@ import {
   resolveHabitIconKey,
 } from "@/lib/habit-icons";
 import { createHabit, updateHabit } from "@/lib/habits";
-import { DEFAULT_HABIT_COLOR, HABIT_PALETTE } from "@/lib/palette";
+import {
+  DEFAULT_HABIT_COLOR,
+  HABIT_PALETTE,
+  habitColorName,
+  habitTint,
+  habitTintAlpha,
+} from "@/lib/palette";
 import { nav } from "@/lib/transitions";
 import type { Habit, HabitDraft, TrackingType } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -165,9 +171,9 @@ export function HabitForm({ habit }: { habit?: Habit }) {
                     style={
                       selected
                         ? ({
-                            backgroundColor: `${colorHex}29`,
-                            color: colorHex,
-                            "--tw-ring-color": colorHex,
+                            backgroundColor: habitTintAlpha(colorHex, 16),
+                            color: habitTint(colorHex),
+                            "--tw-ring-color": habitTint(colorHex),
                           } as React.CSSProperties)
                         : undefined
                     }
@@ -180,27 +186,27 @@ export function HabitForm({ habit }: { habit?: Habit }) {
           </Group>
 
           <Group label="Color">
-            <div className="grid grid-cols-7 gap-x-2 gap-y-3 p-4">
+            <div className="grid grid-cols-6 gap-x-3 gap-y-3 p-4">
               {HABIT_PALETTE.map((hex) => {
                 const selected = colorHex === hex;
                 return (
                   <button
                     key={hex}
                     type="button"
-                    aria-label={`Color ${hex}`}
+                    aria-label={habitColorName(hex)}
                     aria-pressed={selected}
                     onClick={() => {
                       haptic();
                       setColorHex(hex);
                     }}
                     className={cn(
-                      "pressable flex aspect-square w-full items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      "pressable flex aspect-square w-full items-center justify-center rounded-squircle text-(--on-tint) outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                       selected && "ring-[2.5px] ring-offset-[3px] ring-offset-card"
                     )}
                     style={
                       {
-                        backgroundColor: hex,
-                        "--tw-ring-color": hex,
+                        backgroundColor: habitTint(hex),
+                        "--tw-ring-color": habitTint(hex),
                       } as React.CSSProperties
                     }
                   >

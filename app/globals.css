@@ -7,22 +7,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-heading);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --font-sans: var(--font-inter), var(--font-noto-sc), ui-sans-serif, system-ui, -apple-system, "PingFang SC", sans-serif;
+  --font-heading: var(--font-sans);
+  --color-surface: var(--surface);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --radius-squircle: 32%;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -48,83 +39,97 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* javian ng · Kinari & Sumi — brand tokens (shared with javianng.com). */
 :root {
-  /* Grouped background (warm system gray) with white cards, like iOS. */
-  --background: oklch(0.968 0.005 75);
-  --foreground: oklch(0.17 0.004 75);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.004 75);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.004 75);
-  --primary: oklch(0.2 0.006 270);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.94 0.004 75);
-  --secondary-foreground: oklch(0.2 0.006 270);
-  --muted: oklch(0.935 0.005 75);
-  --muted-foreground: oklch(0.54 0.006 75);
-  --accent: oklch(0.94 0.004 75);
-  --accent-foreground: oklch(0.2 0.006 270);
-  --destructive: oklch(0.6 0.22 25);
-  --border: oklch(0.9 0.005 75);
-  --input: oklch(0.9 0.005 75);
-  --ring: oklch(0.7 0.006 75);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Kinari paper with white cards, like iOS grouped lists. */
+  --background: #f5f2ec;
+  --surface: #fbf9f5;
+  --foreground: #16171c; /* sumi ink */
+  --card: #ffffff;
+  --card-foreground: #16171c;
+  --popover: #ffffff;
+  --popover-foreground: #16171c;
+  --primary: #16171c;
+  --primary-foreground: #f5f2ec;
+  --secondary: #ebe7df;
+  --secondary-foreground: #16171c;
+  --muted: #ebe7df;
+  --muted-foreground: #5c5a55;
+  --subtle-foreground: #8a8780;
+  /* Persimmon: the one colour. Marks "now" — today, a full ring, a reached goal. */
+  --accent: #e1602f;
+  --accent-foreground: #16171c;
+  --accent-text: #b4461c;
+  --accent-soft: #f8e1d6;
+  --destructive: #a8322b;
+  --border: #e3ded5;
+  --input: #d6d0c5;
+  --ring: #e1602f;
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Habit pigments (lib/palette.ts); glyphs on them use --on-tint. */
+  --habit-ink: #22242e;
+  --habit-slate: #4f5d70;
+  --habit-indigo: #4a58a8;
+  --habit-violet: #7059ae;
+  --habit-plum: #97497f;
+  --habit-rose: #bc4560;
+  --habit-brick: #b8502f;
+  --habit-ochre: #9c6b12;
+  --habit-olive: #69752a;
+  --habit-moss: #3b7a4b;
+  --habit-teal: #2c7873;
+  --habit-sky: #2e6f9e;
+  --on-tint: #ffffff;
 
   /* Motion: iOS sheet/push curve and a gentle spring. */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.104 26.9%, 1.087 30.4%, 1.002 41.1%, 0.983 46.6%, 0.991 61.5%, 1);
   --duration-push: 480ms;
   --duration-sheet: 520ms;
-  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 2px 8px -2px oklch(0 0 0 / 0.05);
+  --shadow-card: 0 1px 2px rgb(22 23 28 / 0.04), 0 2px 8px -2px rgb(22 23 28 / 0.06);
+  --shadow-now: 0 0 0 3px var(--accent-soft);
 }
 
 .dark {
-  /* iOS dark: true-black base with elevated gray cards. */
-  --background: oklch(0.13 0 0);
-  --foreground: oklch(0.97 0.003 75);
-  --card: oklch(0.215 0.004 286);
-  --card-foreground: oklch(0.97 0.003 75);
-  --popover: oklch(0.24 0.004 286);
-  --popover-foreground: oklch(0.97 0.003 75);
-  --primary: oklch(0.95 0.004 75);
-  --primary-foreground: oklch(0.2 0.006 270);
-  --secondary: oklch(0.285 0.004 286);
-  --secondary-foreground: oklch(0.97 0.003 75);
-  --muted: oklch(0.285 0.004 286);
-  --muted-foreground: oklch(0.7 0.004 286);
-  --accent: oklch(0.285 0.004 286);
-  --accent-foreground: oklch(0.97 0.003 75);
-  --destructive: oklch(0.68 0.2 25);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Sumi: warm ink-black paper with elevated warm cards. */
+  --background: #131211;
+  --surface: #1a1918;
+  --foreground: #f2efe8;
+  --card: #1f1e1c;
+  --card-foreground: #f2efe8;
+  --popover: #262523;
+  --popover-foreground: #f2efe8;
+  --primary: #f2efe8;
+  --primary-foreground: #131211;
+  --secondary: #292826;
+  --secondary-foreground: #f2efe8;
+  --muted: #292826;
+  --muted-foreground: #a6a39c;
+  --subtle-foreground: #77746e;
+  --accent: #f07a4f;
+  --accent-foreground: #131211;
+  --accent-text: #f07a4f;
+  --accent-soft: #3a2419;
+  --destructive: #ee8a7f;
+  --border: #34322f;
+  --input: #45423e;
+  --ring: #f07a4f;
   --shadow-card: none;
+
+  --habit-ink: #e8e4de;
+  --habit-slate: #9aa8bb;
+  --habit-indigo: #8e9be6;
+  --habit-violet: #a995e3;
+  --habit-plum: #d58cbe;
+  --habit-rose: #ee8ca0;
+  --habit-brick: #ec8f6c;
+  --habit-ochre: #ddae55;
+  --habit-olive: #aebb68;
+  --habit-moss: #7fbe8e;
+  --habit-teal: #6fbcb5;
+  --habit-sky: #78b2dd;
+  --on-tint: #131211;
 }
 
 @layer base {
@@ -133,6 +138,7 @@
   }
   html {
     @apply font-sans;
+    font-feature-settings: "cv11", "ss01";
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
   }
@@ -156,6 +162,9 @@
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+  ::selection {
+    background: var(--accent-soft);
   }
 }
 

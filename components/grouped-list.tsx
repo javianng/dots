@@ -77,7 +77,7 @@ export function RowIcon({
   return (
     <span
       className={cn(
-        "flex size-[29px] shrink-0 items-center justify-center rounded-[7px] text-white [&_svg]:size-[17px]",
+        "flex size-[29px] shrink-0 items-center justify-center rounded-squircle text-white [&_svg]:size-[17px]",
         className
       )}
     >
