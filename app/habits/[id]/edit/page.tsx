@@ -7,7 +7,7 @@ import { HabitForm } from "@/components/habit-form";
 import { RequireAuth } from "@/components/require-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHabits } from "@/hooks/use-habits";
-import { PageTransition } from "@/lib/transitions";
+import { PageTransition, nav } from "@/lib/transitions";
 
 export default function EditHabitPage({
   params,
@@ -29,11 +29,18 @@ function EditHabit({ habitId }: { habitId: string }) {
   const { habits, loading } = useHabits();
   const habit = habits?.find((h) => h.id === habitId);
 
+  // Hold on to the last habit so that deleting it keeps the form on screen
+  // while the sheet slides away, instead of flashing the skeleton.
+  const [shownHabit, setShownHabit] = React.useState(habit);
+  if (habit && habit !== shownHabit) setShownHabit(habit);
+
   React.useEffect(() => {
-    if (!loading && habits && !habit) router.replace("/");
+    if (!loading && habits && !habit) {
+      router.replace("/", { transitionTypes: nav("sheetDown") });
+    }
   }, [loading, habits, habit, router]);
 
-  if (loading || !habit) {
+  if (!shownHabit) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
         <Skeleton className="h-10 w-full rounded-xl" />
@@ -42,5 +49,5 @@ function EditHabit({ habitId }: { habitId: string }) {
     );
   }
 
-  return <HabitForm habit={habit} />;
+  return <HabitForm habit={shownHabit} />;
 }
