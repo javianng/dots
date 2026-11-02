@@ -4,6 +4,7 @@ import { Check, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { DeleteHabitButton } from "@/components/delete-habit-button";
 import { Divider, Group, Row } from "@/components/grouped-list";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -275,6 +276,8 @@ export function HabitForm({ habit }: { habit?: Habit }) {
           </Group>
 
           {error && <FieldError className="px-4">{error}</FieldError>}
+
+          {isEdit && <DeleteHabitButton habit={habit} disabled={pending} />}
         </div>
       </form>
     </main>
