@@ -9,9 +9,9 @@ import {
 } from "firebase/firestore";
 
 import { completionsCollection, habitsCollection } from "@/lib/habits";
-import type { Habit, TrackingType } from "@/lib/types";
+import type { Habit } from "@/lib/types";
 
-type HabitMeta = Omit<Habit, "history">;
+type HabitMeta = Omit<Habit, "history" | "counts">;
 
 // Snapshots are tagged with the uid they were loaded for, so switching users
 // discards stale data by derivation instead of resetting state in an effect.
@@ -22,7 +22,8 @@ interface MetaSnapshot {
 
 interface HistorySnapshot {
   uid: string;
-  byHabit: Record<string, Record<string, boolean>>;
+  /** Per day: the logged count, or null for docs saved before counts existed. */
+  byHabit: Record<string, Record<string, number | null>>;
 }
 
 /**
@@ -50,8 +51,7 @@ function useHabitsRealtime(uid: string | undefined) {
             icon: data.icon as string | undefined,
             colorHex: (data.colorHex as string) ?? "#8b5cf6",
             streakGoal: (data.streakGoal as number | null) ?? null,
-            completionsPerDay: (data.completionsPerDay as number) ?? 1,
-            trackingType: (data.trackingType as TrackingType) ?? "step",
+            completionsPerDay: Math.max(1, (data.completionsPerDay as number) ?? 1),
             createdAt:
               (data.createdAt as Timestamp | null)?.toMillis() ?? Date.now(),
           };
@@ -72,8 +72,11 @@ function useHabitsRealtime(uid: string | undefined) {
     if (!uid || !habitIds) return;
     const unsubs = habitIds.split("\n").map((habitId) =>
       onSnapshot(completionsCollection(uid, habitId), (snap) => {
-        const history: Record<string, boolean> = {};
-        for (const d of snap.docs) history[d.id] = true;
+        const history: Record<string, number | null> = {};
+        for (const d of snap.docs) {
+          const count = d.data().count;
+          history[d.id] = typeof count === "number" ? count : null;
+        }
         setHistorySnap((prev) => ({
           uid,
           byHabit: {
@@ -90,7 +93,18 @@ function useHabitsRealtime(uid: string | undefined) {
     if (!metas) return null;
     const byHabit =
       historySnap && historySnap.uid === uid ? historySnap.byHabit : {};
-    return metas.map((meta) => ({ ...meta, history: byHabit[meta.id] ?? {} }));
+    return metas.map((meta) => {
+      const target = meta.completionsPerDay;
+      const history: Record<string, boolean> = {};
+      const counts: Record<string, number> = {};
+      for (const [day, raw] of Object.entries(byHabit[meta.id] ?? {})) {
+        // Days saved before counts existed were plain check-offs: treat as done.
+        const count = raw ?? target;
+        counts[day] = count;
+        history[day] = count >= target;
+      }
+      return { ...meta, history, counts };
+    });
   }, [metas, historySnap, uid]);
 
   return { habits, loading: habits === null };

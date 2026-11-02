@@ -1,6 +1,5 @@
 "use client";
 
-import { celebrateCompletion } from "@/components/celebrate-toast";
 import { HabitIcon } from "@/components/habit-icon";
 import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
 import { MonthCalendar } from "@/components/month-calendar";
@@ -11,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
 import { currentStreak } from "@/lib/dates";
-import { setCompletion } from "@/lib/habits";
+import { checkIn } from "@/lib/check-in";
 import { HabitIconTransition, PageTransition, nav } from "@/lib/transitions";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -145,9 +144,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
               onMonthOffsetChange={setCalMonthOffset}
               onToggleDay={(dateKey) => {
                 if (!user) return;
-                const nextDone = !habit.history[dateKey];
-                if (nextDone) celebrateCompletion(habit, dateKey);
-                setCompletion(user.uid, habit.id, dateKey, nextDone);
+                checkIn(user.uid, habit, dateKey);
               }}
             />
           </CardContent>

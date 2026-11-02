@@ -10,7 +10,6 @@ import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/hooks/use-auth";
 import { haptic } from "@/lib/haptics";
 import {
@@ -28,8 +27,11 @@ import {
   habitTintAlpha,
 } from "@/lib/palette";
 import { nav } from "@/lib/transitions";
-import type { Habit, HabitDraft, TrackingType } from "@/lib/types";
+import type { Habit, HabitDraft } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+/** Keeps the ring readable and the stepper sane. */
+const MAX_DAILY_TARGET = 20;
 
 const bareInput =
   "h-12 rounded-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0 dark:bg-transparent";
@@ -49,9 +51,6 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const [colorHex, setColorHex] = React.useState(habit?.colorHex ?? DEFAULT_HABIT_COLOR);
   const [streakGoal, setStreakGoal] = React.useState(
     habit?.streakGoal ? String(habit.streakGoal) : ""
-  );
-  const [trackingType, setTrackingType] = React.useState<TrackingType>(
-    habit?.trackingType ?? "step"
   );
   const [completionsPerDay, setCompletionsPerDay] = React.useState(
     habit?.completionsPerDay ?? 1
@@ -78,7 +77,6 @@ export function HabitForm({ habit }: { habit?: Habit }) {
       colorHex,
       streakGoal: Number.isFinite(goal) && goal > 0 ? goal : null,
       completionsPerDay,
-      trackingType,
     };
     try {
       if (isEdit) {
@@ -217,7 +215,39 @@ export function HabitForm({ habit }: { habit?: Habit }) {
             </div>
           </Group>
 
-          <Group label="Goal">
+          <Group
+            label="Goal"
+            footer={
+              completionsPerDay === 1
+                ? "One tap marks the day done."
+                : `Tap ${completionsPerDay} times to finish the day. Each tap fills part of the ring.`
+            }
+          >
+            <Row label="Daily target">
+              <div className="flex h-8 items-center rounded-[9px] bg-foreground/[0.07]">
+                <StepperButton
+                  label="Decrease daily target"
+                  disabled={completionsPerDay <= 1}
+                  onClick={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
+                >
+                  <Minus />
+                </StepperButton>
+                <span
+                  aria-live="polite"
+                  className="min-w-16 px-1 text-center text-[15px] font-medium tabular-nums"
+                >
+                  {completionsPerDay}× a day
+                </span>
+                <StepperButton
+                  label="Increase daily target"
+                  disabled={completionsPerDay >= MAX_DAILY_TARGET}
+                  onClick={() => setCompletionsPerDay((n) => Math.min(MAX_DAILY_TARGET, n + 1))}
+                >
+                  <Plus />
+                </StepperButton>
+              </div>
+            </Row>
+            <Divider />
             <Row label="Streak goal" htmlFor="habit-streak-goal">
               <div className="flex items-center gap-1.5">
                 <input
@@ -225,58 +255,14 @@ export function HabitForm({ habit }: { habit?: Habit }) {
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  placeholder="None"
+                  placeholder="Off"
                   value={streakGoal}
                   onChange={(e) => setStreakGoal(e.target.value)}
                   className="w-16 bg-transparent text-right text-[17px] text-muted-foreground tabular-nums outline-none placeholder:text-muted-foreground/60 focus:text-foreground"
                 />
-                <span className="text-[15px] text-muted-foreground">days</span>
-              </div>
-            </Row>
-            <Divider />
-            <Row label="Tracking">
-              <ToggleGroup
-                value={[trackingType]}
-                onValueChange={(next: unknown[]) => {
-                  const mode = next[0] as TrackingType | undefined;
-                  if (mode) setTrackingType(mode);
-                }}
-                spacing={0}
-                className="rounded-[9px] bg-foreground/[0.07] p-0.5"
-              >
-                {(["step", "custom"] as const).map((mode) => (
-                  <ToggleGroupItem
-                    key={mode}
-                    value={mode}
-                    className="h-8 rounded-[7px] px-3.5 text-[13px] font-medium transition-[background-color,box-shadow] duration-200 hover:bg-transparent aria-pressed:bg-card aria-pressed:shadow-[0_1px_3px_oklch(0_0_0/0.12)] dark:aria-pressed:bg-white/20"
-                  >
-                    {mode === "step" ? "Steps" : "Custom"}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </Row>
-            <Divider />
-            <Row label="Per day">
-              <div className="flex items-center gap-3">
-                <span className="w-6 text-right text-[17px] text-muted-foreground tabular-nums">
-                  {completionsPerDay}
-                </span>
-                <div className="flex h-8 items-center rounded-[9px] bg-foreground/[0.07]">
-                  <StepperButton
-                    label="Decrease completions per day"
-                    disabled={completionsPerDay <= 1}
-                    onClick={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
-                  >
-                    <Minus />
-                  </StepperButton>
-                  <span className="h-4 w-px bg-foreground/15" />
-                  <StepperButton
-                    label="Increase completions per day"
-                    onClick={() => setCompletionsPerDay((n) => n + 1)}
-                  >
-                    <Plus />
-                  </StepperButton>
-                </div>
+                {streakGoal.trim() !== "" && (
+                  <span className="text-[15px] text-muted-foreground">days</span>
+                )}
               </div>
             </Row>
           </Group>

@@ -5,7 +5,6 @@ import * as React from "react";
 import { ViewTransition, addTransitionType, startTransition } from "react";
 
 import { AppHeader } from "@/components/app-header";
-import { celebrateCompletion } from "@/components/celebrate-toast";
 import { DayToggle } from "@/components/day-toggle";
 import { HabitIcon } from "@/components/habit-icon";
 import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
@@ -16,7 +15,7 @@ import { ViewSwitcher, type ViewTab } from "@/components/view-switcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
 import { currentStreak, lastNDays, toDateKey, todayKey } from "@/lib/dates";
-import { setCompletion } from "@/lib/habits";
+import { checkIn, dayCount } from "@/lib/check-in";
 import { HabitIconTransition, nav } from "@/lib/transitions";
 import type { Habit } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -39,9 +38,7 @@ export function MainScreen() {
   const toggle = React.useCallback<ToggleFn>(
     (habit, dateKey) => {
       if (!user) return;
-      const nextDone = !habit.history[dateKey];
-      if (nextDone) celebrateCompletion(habit, dateKey);
-      setCompletion(user.uid, habit.id, dateKey, nextDone);
+      checkIn(user.uid, habit, dateKey);
     },
     [user]
   );
@@ -254,6 +251,8 @@ function GridView({
                 </HabitLink>
                 <DayToggle
                   completed={!!habit.history[today]}
+                  count={dayCount(habit, today)}
+                  target={habit.completionsPerDay}
                   colorHex={habit.colorHex}
                   onToggle={() => onToggle(habit, today)}
                   label={`Mark ${habit.name} done today`}
@@ -324,6 +323,8 @@ function ListView({
                   <DayToggle
                     key={key}
                     completed={!!habit.history[key]}
+                    count={dayCount(habit, key)}
+                    target={habit.completionsPerDay}
                     colorHex={habit.colorHex}
                     onToggle={() => onToggle(habit, key)}
                     label={`Mark ${habit.name} done on ${key}`}
@@ -366,6 +367,8 @@ function CompactView({
             </HabitLink>
             <DayToggle
               completed={!!habit.history[today]}
+              count={dayCount(habit, today)}
+              target={habit.completionsPerDay}
               colorHex={habit.colorHex}
               onToggle={() => onToggle(habit, today)}
               label={`Mark ${habit.name} done today`}
