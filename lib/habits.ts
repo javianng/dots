@@ -50,16 +50,22 @@ export async function deleteHabit(uid: string, habitId: string) {
   }
 }
 
-export async function setCompletion(
+/**
+ * Records how many times a habit was done on a day. Zero removes the day.
+ * `completed` is stored alongside so readers (e.g. the reminders sender)
+ * don't need the habit's target to know whether the day is finished.
+ */
+export async function setDayCount(
   uid: string,
   habitId: string,
   dateKey: string,
-  completed: boolean
+  count: number,
+  target: number
 ) {
   const ref = doc(completionsCollection(uid, habitId), dateKey);
-  if (completed) {
-    await setDoc(ref, { completed: true, completedAt: serverTimestamp() });
-  } else {
+  if (count <= 0) {
     await deleteDoc(ref);
+  } else {
+    await setDoc(ref, { count, completed: count >= target, completedAt: serverTimestamp() });
   }
 }

@@ -101,7 +101,12 @@ async function countRemaining(db, uid, dateKey) {
   if (habits.empty) return { total: 0, remaining: 0 };
   const done = await Promise.all(
     habits.docs.map((h) =>
-      h.ref.collection("completions").doc(dateKey).get().then((s) => s.exists)
+      h.ref
+        .collection("completions")
+        .doc(dateKey)
+        .get()
+        // A day with only some taps isn't done yet; older docs have no flag.
+        .then((s) => s.exists && s.get("completed") !== false)
     )
   );
   return { total: habits.size, remaining: done.filter((d) => !d).length };

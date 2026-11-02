@@ -1,5 +1,3 @@
-export type TrackingType = "step" | "custom";
-
 export interface Habit {
   id: string;
   name: string;
@@ -7,11 +5,13 @@ export interface Habit {
   icon?: string;
   colorHex: string;
   streakGoal: number | null;
+  /** Taps needed to finish a day. 1 = a simple check-off. */
   completionsPerDay: number;
-  trackingType: TrackingType;
   createdAt: number;
-  /** 'YYYY-MM-DD' → completed. Derived from the completions subcollection. */
+  /** 'YYYY-MM-DD' → completed (count reached the daily target). */
   history: Record<string, boolean>;
+  /** 'YYYY-MM-DD' → taps logged that day (only days with at least one). */
+  counts: Record<string, number>;
 }
 
 export interface HabitDraft {
@@ -21,5 +21,4 @@ export interface HabitDraft {
   colorHex: string;
   streakGoal: number | null;
   completionsPerDay: number;
-  trackingType: TrackingType;
 }
