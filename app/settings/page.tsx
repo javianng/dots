@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Divider, Group, Row, RowIcon } from "@/components/grouped-list";
+import { LifeSettings } from "@/components/life-settings";
 import { ReminderSettings } from "@/components/reminder-settings";
 import { RequireAuth } from "@/components/require-auth";
 import { useTheme } from "@/components/theme-provider";
@@ -78,6 +79,8 @@ function SettingsScreen() {
             />
           </Row>
         </Group>
+
+        {user && <LifeSettings uid={user.uid} />}
 
         {user && <ReminderSettings uid={user.uid} />}
 
