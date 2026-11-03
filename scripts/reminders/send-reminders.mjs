@@ -4,8 +4,7 @@
  * .github/workflows/reminders.yml (every 15 minutes).
  *
  * For each user with `reminder.enabled`, if their local time has reached
- * `reminder.time` today (within SEND_WINDOW_MINUTES) and no reminder has gone
- * out today, it counts habits not yet completed today and pushes to every
+ * `reminder.time` today and no reminder has gone out today, it counts habits not yet completed today and pushes to every
  * subscribed device. Users who've already finished everything get no push.
  *
  * Env:
@@ -19,7 +18,6 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import webpush from "web-push";
 
-const SEND_WINDOW_MINUTES = 120;
 const FORCE = process.env.FORCE === "true";
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -62,8 +60,9 @@ export function isDue(reminder, now, force = false) {
   const target = parseTime(reminder.time);
   if (target === null) return { due: false };
   if (reminder.lastSentDate === dateKey) return { due: false };
-  const late = minutes - target;
-  return { due: late >= 0 && late < SEND_WINDOW_MINUTES, dateKey };
+  // Any time after the reminder time, until local midnight. Scheduled runs
+  // can start hours late, and a late reminder beats a missed one.
+  return { due: minutes >= target, dateKey };
 }
 
 function isValidTimeZone(tz) {
