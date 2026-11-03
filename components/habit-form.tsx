@@ -3,12 +3,11 @@
 import { Check, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { DeleteHabitButton } from "@/components/delete-habit-button";
 import { Divider, Group, Row } from "@/components/grouped-list";
-import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { haptic } from "@/lib/haptics";
@@ -26,6 +25,7 @@ import {
   habitTint,
   habitTintAlpha,
 } from "@/lib/palette";
+import { habitHref } from "@/lib/routes";
 import { nav } from "@/lib/transitions";
 import type { Habit, HabitDraft } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const router = useRouter();
   const { user } = useAuth();
   const isEdit = !!habit;
-  const backHref = isEdit ? `/habits/${habit.id}` : "/";
+  const backHref = isEdit ? habitHref(habit.id) : "/";
 
   const [name, setName] = React.useState(habit?.name ?? "");
   const [description, setDescription] = React.useState(habit?.description ?? "");
@@ -55,7 +55,6 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const [completionsPerDay, setCompletionsPerDay] = React.useState(
     habit?.completionsPerDay ?? 1
   );
-  const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
   const canSave = name.trim().length > 0 && !pending;
@@ -64,10 +63,9 @@ export function HabitForm({ habit }: { habit?: Habit }) {
     router.push(href, { transitionTypes: nav("sheetDown") });
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!user || !canSave) return;
-    setError(null);
     setPending(true);
     const goal = parseInt(streakGoal, 10);
     const draft: HabitDraft = {
@@ -78,18 +76,15 @@ export function HabitForm({ habit }: { habit?: Habit }) {
       streakGoal: Number.isFinite(goal) && goal > 0 ? goal : null,
       completionsPerDay,
     };
-    try {
-      if (isEdit) {
-        await updateHabit(user.uid, habit.id, draft);
-      } else {
-        await createHabit(user.uid, draft);
-      }
-      haptic("success");
-      dismiss(isEdit ? `/habits/${habit.id}` : "/");
-    } catch {
-      setError("Couldn't save. Try again.");
-      setPending(false);
-    }
+    // Don't wait for the server: Firestore applies the change locally right
+    // away (and queues it while offline), so the sheet can close now. A
+    // rejected write (e.g. rules) surfaces as a toast instead.
+    const write = isEdit
+      ? updateHabit(user.uid, habit.id, draft)
+      : createHabit(user.uid, draft);
+    write.catch(() => toast.error(`Couldn't save "${draft.name}". Try again.`));
+    haptic("success");
+    dismiss(isEdit ? habitHref(habit.id) : "/");
   }
 
   return (
@@ -112,7 +107,6 @@ export function HabitForm({ habit }: { habit?: Habit }) {
               disabled={!canSave}
               className="tappable flex items-center gap-2 justify-self-end rounded-full px-3 py-2 text-[17px] font-semibold disabled:opacity-35"
             >
-              {pending && <Spinner className="size-4" />}
               {isEdit ? "Done" : "Add"}
             </button>
           </div>
@@ -266,8 +260,6 @@ export function HabitForm({ habit }: { habit?: Habit }) {
               </div>
             </Row>
           </Group>
-
-          {error && <FieldError className="px-4">{error}</FieldError>}
 
           {isEdit && <DeleteHabitButton habit={habit} disabled={pending} />}
         </div>

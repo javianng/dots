@@ -38,12 +38,25 @@ shadcn/ui, on top of Base UI. Auth and data via Firebase.
 
 See `CLAUDE.md` for architecture notes.
 
+## Offline
+
+dots works without a connection:
+
+- **Data**: Firestore keeps habits and check-ins in IndexedDB
+  (`persistentLocalCache` in `lib/firebase.ts`). Changes made offline are
+  queued on the device and sync on their own when it's back online. Saves and
+  deletes don't wait for the server.
+- **App shell**: `app/sw.ts` (bundled by Serwist via `app/serwist/[path]/route.ts`)
+  precaches the pages and static assets. Habit screens use `/habit?id=…` so one
+  cached page serves every habit. Pages that aren't cached fall back to `/~offline`.
+- Pages are only precached in production builds (`npm run build && npm run start`), so test offline there.
+
 ## Reminders (Web Push)
 
 dots can send a daily reminder if today's dots aren't filled in. It uses
 standard Web Push, so there's no paid service involved:
 
-- **Browser side**: `app/manifest.ts` + `public/sw.js` make dots installable,
+- **Browser side**: `app/manifest.ts` + the service worker (`app/sw.ts`) make dots installable,
   and the Reminders switch in Settings subscribes the device
   (`lib/push.ts`, `components/reminder-settings.tsx`).
 - **Sender**: `scripts/reminders/send-reminders.mjs`, run every 15 minutes by

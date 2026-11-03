@@ -36,19 +36,17 @@ export function DeleteHabitButton({
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
 
-  async function handleConfirm() {
+  function handleConfirm() {
     if (!user) return;
     haptic();
     setOpen(false);
     setPending(true);
-    try {
-      await deleteHabit(user.uid, habit.id);
-    } catch {
-      // Toast, not inline: if the server rejects the write, the local delete
-      // has already sent the user home by the time we land here.
+    // Not awaited: the local delete sends the user home straight away (and is
+    // queued while offline). A rejected write surfaces as a toast.
+    deleteHabit(user.uid, habit.id).catch(() => {
       toast.error(`Couldn't delete "${habit.name}". Try again.`);
       setPending(false);
-    }
+    });
   }
 
   return (

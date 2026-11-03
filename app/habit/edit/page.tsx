@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { HabitForm } from "@/components/habit-form";
 import { RequireAuth } from "@/components/require-auth";
@@ -9,19 +9,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useHabits } from "@/hooks/use-habits";
 import { PageTransition, nav } from "@/lib/transitions";
 
-export default function EditHabitPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = React.use(params);
+export default function EditHabitPage() {
   return (
     <PageTransition>
       <RequireAuth>
-        <EditHabit habitId={id} />
+        {/* useSearchParams needs a Suspense boundary to keep the page static. */}
+        <React.Suspense fallback={null}>
+          <EditHabitFromQuery />
+        </React.Suspense>
       </RequireAuth>
     </PageTransition>
   );
+}
+
+function EditHabitFromQuery() {
+  const id = useSearchParams().get("id") ?? "";
+  return <EditHabit key={id} habitId={id} />;
 }
 
 function EditHabit({ habitId }: { habitId: string }) {

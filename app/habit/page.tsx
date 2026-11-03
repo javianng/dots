@@ -14,23 +14,27 @@ import { checkIn } from "@/lib/check-in";
 import { HabitIconTransition, PageTransition, nav } from "@/lib/transitions";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { habitTint } from "@/lib/palette";
+import { editHabitHref } from "@/lib/routes";
 
-export default function HabitDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = React.use(params);
+export default function HabitDetailPage() {
   return (
     <PageTransition>
       <RequireAuth>
-        <HabitDetail habitId={id} />
+        {/* useSearchParams needs a Suspense boundary to keep the page static. */}
+        <React.Suspense fallback={null}>
+          <HabitDetailFromQuery />
+        </React.Suspense>
       </RequireAuth>
     </PageTransition>
   );
+}
+
+function HabitDetailFromQuery() {
+  const id = useSearchParams().get("id") ?? "";
+  return <HabitDetail key={id} habitId={id} />;
 }
 
 function HabitDetail({ habitId }: { habitId: string }) {
@@ -78,7 +82,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
             className="h-10 rounded-full px-3 text-[17px] font-normal"
             nativeButton={false}
             render={
-              <Link href={`/habits/${habit.id}/edit`} transitionTypes={nav("sheetUp")} />
+              <Link href={editHabitHref(habit.id)} transitionTypes={nav("sheetUp")} />
             }
           >
             Edit
