@@ -1,18 +1,27 @@
 "use client";
 
-import { LayoutGrid, List, Rows3, type LucideIcon } from "lucide-react";
+import { Hourglass, LayoutGrid, List, Rows3, type LucideIcon } from "lucide-react";
 import * as React from "react";
 
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
-export type ViewTab = "grid" | "list" | "compact";
+export type ViewTab = "grid" | "list" | "compact" | "life";
 
 const TABS: { value: ViewTab; label: string; Icon: LucideIcon }[] = [
   { value: "grid", label: "Grid view", Icon: LayoutGrid },
   { value: "list", label: "List view", Icon: List },
   { value: "compact", label: "Compact view", Icon: Rows3 },
+  { value: "life", label: "Life in weeks", Icon: Hourglass },
 ];
+
+/** Position of a tab in the switcher, used to pick the slide direction. */
+export function tabIndex(tab: ViewTab): number {
+  return Math.max(
+    0,
+    TABS.findIndex((t) => t.value === tab)
+  );
+}
 
 /**
  * Floating glass segmented control. The selection thumb glides between
@@ -25,10 +34,7 @@ export function ViewSwitcher({
   value: ViewTab;
   onChange: (tab: ViewTab) => void;
 }) {
-  const index = Math.max(
-    0,
-    TABS.findIndex((t) => t.value === value)
-  );
+  const index = tabIndex(value);
 
   return (
     <div
@@ -38,7 +44,7 @@ export function ViewSwitcher({
       <div
         role="radiogroup"
         aria-label="Layout"
-        className="material-thick pointer-events-auto relative grid grid-cols-3 rounded-full p-1 shadow-[0_8px_30px_-6px_oklch(0_0_0/0.22)] ring-1 ring-black/5 dark:ring-white/10"
+        className="material-thick pointer-events-auto relative grid grid-cols-4 rounded-full p-1 shadow-[0_8px_30px_-6px_oklch(0_0_0/0.22)] ring-1 ring-black/5 dark:ring-white/10"
       >
         <span
           aria-hidden="true"

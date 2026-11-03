@@ -8,10 +8,11 @@ import { AppHeader } from "@/components/app-header";
 import { DayToggle } from "@/components/day-toggle";
 import { HabitIcon } from "@/components/habit-icon";
 import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
+import { LifePanel } from "@/components/life-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ViewSwitcher, type ViewTab } from "@/components/view-switcher";
+import { ViewSwitcher, tabIndex, type ViewTab } from "@/components/view-switcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
 import { currentStreak, lastNDays, toDateKey, todayKey } from "@/lib/dates";
@@ -22,6 +23,10 @@ import type { Habit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type ToggleFn = (habit: Habit, dateKey: string) => void;
+
+// Tab changes slide content toward the picked tab (keyframes in globals.css).
+const SLIDE_ENTER = { "view-next": "view-from-right", "view-prev": "view-from-left", default: "none" };
+const SLIDE_EXIT = { "view-next": "view-to-left", "view-prev": "view-to-right", default: "none" };
 
 // Cards rise in on the first load of a session only, not on every return.
 let hasPlayedEntrance = false;
@@ -46,7 +51,8 @@ export function MainScreen() {
 
   const switchTab = (tab: ViewTab) => {
     startTransition(() => {
-      addTransitionType("view-switch");
+      // Slide toward the picked tab, like paging between iOS tabs.
+      addTransitionType(tabIndex(tab) > tabIndex(activeTab) ? "view-next" : "view-prev");
       setActiveTab(tab);
     });
   };
@@ -66,19 +72,20 @@ export function MainScreen() {
             <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         </>
-      ) : list.length === 0 ? (
-        <EmptyState />
       ) : (
         <>
-          <TodaySummary habits={list} />
-          <ViewTransition
-            key={activeTab}
-            enter={{ "view-switch": "fade-in", default: "none" }}
-            exit={{ "view-switch": "fade-out", default: "none" }}
-            default="none"
-          >
-            <div>
-              {activeTab === "grid" ? (
+          {activeTab !== "life" && list.length > 0 && (
+            <ViewTransition enter={SLIDE_ENTER} exit={SLIDE_EXIT} default="none">
+              <TodaySummary habits={list} />
+            </ViewTransition>
+          )}
+          <ViewTransition key={activeTab} enter={SLIDE_ENTER} exit={SLIDE_EXIT} default="none">
+            <div className="flex flex-1 flex-col">
+              {activeTab === "life" ? (
+                <LifePanel />
+              ) : list.length === 0 ? (
+                <EmptyState />
+              ) : activeTab === "grid" ? (
                 <GridView {...viewProps} />
               ) : activeTab === "list" ? (
                 <ListView {...viewProps} />
@@ -89,9 +96,7 @@ export function MainScreen() {
           </ViewTransition>
         </>
       )}
-      {!loading && list.length > 0 && (
-        <ViewSwitcher value={activeTab} onChange={switchTab} />
-      )}
+      {!loading && <ViewSwitcher value={activeTab} onChange={switchTab} />}
     </div>
   );
 }

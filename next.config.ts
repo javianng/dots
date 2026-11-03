@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     // Habit screens moved from /habits/:id to /habit?id= so they cache offline.
     // Keep old links (bookmarks, history) working.
     return [
+      // Life in Weeks is now a tab on the home screen.
+      { source: "/life", destination: "/", permanent: false },
       { source: "/habits/:id/edit", destination: "/habit/edit?id=:id", permanent: true },
       { source: "/habits/:id((?!new$)[^/]+)", destination: "/habit?id=:id", permanent: true },
     ];

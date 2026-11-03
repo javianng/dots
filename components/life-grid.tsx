@@ -10,7 +10,8 @@ const TOP = 16;
 /**
  * Your life in weeks: one row per year of life, one dot per week. Weeks
  * lived are ink, this week is persimmon (the brand's "now"), the rest are
- * faint.
+ * faint. On mount the lived weeks fill in year by year, then "now" pops in
+ * (see .life-* in app/globals.css).
  */
 export function LifeGrid({
   stats,
@@ -86,10 +87,10 @@ export function LifeGrid({
           </text>
         ))}
       </g>
-      <path d={ahead} className="fill-foreground/[0.11]" />
-      <path d={lived} className="fill-foreground" />
+      <path d={ahead} className="life-ahead fill-foreground/[0.11]" />
+      <path d={lived} className="life-lived fill-foreground" />
       {showNow && (
-        <g>
+        <g className="life-now">
           <circle
             cx={nowX}
             cy={nowY}

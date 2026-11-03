@@ -1,15 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Cake,
-  ChevronRight,
-  Hourglass,
-  Minus,
-  Plus,
-  Sparkles,
-} from "lucide-react";
-import Link from "next/link";
+import { Cake, Hourglass, Minus, Plus } from "lucide-react";
 
 import { Divider, Group, Row, RowIcon } from "@/components/grouped-list";
 import { FieldError } from "@/components/ui/field";
@@ -23,7 +15,6 @@ import {
   validateLifeProfile,
 } from "@/lib/life";
 import { todayKey } from "@/lib/dates";
-import { nav } from "@/lib/transitions";
 
 /** Settings section: date of birth + life expectancy, saved as you edit. */
 export function LifeSettings({ uid }: { uid: string }) {
@@ -76,7 +67,7 @@ export function LifeSettings({ uid }: { uid: string }) {
       label="Your Life"
       footer={
         <>
-          Used to draw your life in weeks. Only you can see this.
+          Used for the Life tab on the home screen. Only you can see this.
           {error && <FieldError className="mt-1.5">{error}</FieldError>}
         </>
       }
@@ -139,18 +130,6 @@ export function LifeSettings({ uid }: { uid: string }) {
           </button>
         </div>
       </Row>
-      <Divider inset={58} />
-      <Link
-        href="/life"
-        transitionTypes={nav("push")}
-        className="tappable flex min-h-12 items-center gap-3 px-4 py-1.5 text-[17px]"
-      >
-        <RowIcon className="bg-[#22242e] dark:bg-[#5c5a55]">
-          <Sparkles />
-        </RowIcon>
-        <span className="flex-1">Life in Weeks</span>
-        <ChevronRight className="size-5 text-muted-foreground/60" />
-      </Link>
     </Group>
   );
 }
