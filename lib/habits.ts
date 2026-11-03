@@ -3,6 +3,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDocsFromCache,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -22,10 +23,8 @@ export function completionsCollection(uid: string, habitId: string) {
   return collection(db, "users", uid, "habits", habitId, "completions");
 }
 
-export async function createHabit(uid: string, draft: HabitDraft): Promise<string> {
-  const ref = doc(habitsCollection(uid));
-  await setDoc(ref, { ...draft, createdAt: serverTimestamp() });
-  return ref.id;
+export async function createHabit(uid: string, draft: HabitDraft): Promise<void> {
+  await setDoc(doc(habitsCollection(uid)), { ...draft, createdAt: serverTimestamp() });
 }
 
 export async function updateHabit(uid: string, habitId: string, draft: HabitDraft) {
@@ -36,18 +35,27 @@ export async function updateHabit(uid: string, habitId: string, draft: HabitDraf
  * Deletes a habit and its completions (Firestore doesn't cascade to
  * subcollections). The habit doc goes last, so if a chunk fails the habit is
  * still there to retry from rather than leaving invisible orphans.
+ *
+ * Completions come from the local cache (the app already listens to them),
+ * so this works offline. Batches are committed without waiting on each
+ * other: Firestore applies them locally in order and syncs them later.
  */
 export async function deleteHabit(uid: string, habitId: string) {
-  const completions = await getDocs(completionsCollection(uid, habitId));
+  const completionsRef = completionsCollection(uid, habitId);
+  const completions = await getDocsFromCache(completionsRef).catch(() =>
+    getDocs(completionsRef)
+  );
   const refs = [
     ...completions.docs.map((d) => d.ref),
     doc(habitsCollection(uid), habitId),
   ];
+  const commits: Promise<void>[] = [];
   for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
     const batch = writeBatch(db);
     refs.slice(i, i + BATCH_LIMIT).forEach((ref) => batch.delete(ref));
-    await batch.commit();
+    commits.push(batch.commit());
   }
+  await Promise.all(commits);
 }
 
 /**

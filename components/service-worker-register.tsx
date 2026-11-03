@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { registerServiceWorker } from "@/lib/push";
 
-/** Registers /sw.js once on load so push reminders can be delivered. */
+/** Registers the service worker once on load: offline caching and push reminders. */
 export function ServiceWorkerRegister() {
   React.useEffect(() => {
     void registerServiceWorker();
