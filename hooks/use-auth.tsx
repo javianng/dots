@@ -13,6 +13,7 @@ import {
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { saveLifeProfile, type LifeProfile } from "@/lib/life";
 import { disableReminders } from "@/lib/push";
 
 const REMINDER_CLEANUP_TIMEOUT_MS = 3000;
@@ -64,20 +65,23 @@ export function useAuth() {
 export async function signUpWithEmail(
   name: string,
   email: string,
-  password: string
+  password: string,
+  life?: LifeProfile
 ) {
   const { user } = await createUserWithEmailAndPassword(auth, email, password);
   if (name) await updateProfile(user, { displayName: name });
   await ensureUserDoc(user);
+  if (life) await saveLifeProfile(user.uid, life);
 }
 
 export async function signInWithEmail(email: string, password: string) {
   await signInWithEmailAndPassword(auth, email, password);
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(life?: LifeProfile) {
   const { user } = await signInWithPopup(auth, googleProvider);
   await ensureUserDoc(user);
+  if (life) await saveLifeProfile(user.uid, life);
 }
 
 export async function signOutUser() {

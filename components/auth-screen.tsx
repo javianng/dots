@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { LifeFields } from "@/components/life-fields";
 import { Logo } from "@/components/logo";
 import {
   signInWithEmail,
@@ -22,6 +23,11 @@ import {
   signUpWithEmail,
   useAuth,
 } from "@/hooks/use-auth";
+import {
+  DEFAULT_LIFE_EXPECTANCY,
+  validateLifeProfile,
+  type LifeProfile,
+} from "@/lib/life";
 import { nav } from "@/lib/transitions";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +70,10 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [birthDate, setBirthDate] = React.useState("");
+  const [lifeYears, setLifeYears] = React.useState(String(DEFAULT_LIFE_EXPECTANCY));
   const [error, setError] = React.useState<string | null>(null);
+  const [lifeError, setLifeError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
 
   React.useEffect(() => {
@@ -83,13 +92,35 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
     }
   }
 
+  /**
+   * Sign-up asks for a birthday + life expectancy (for Life in Weeks).
+   * Email sign-up requires them; Google sign-up saves them if filled in,
+   * otherwise the Life page asks later.
+   */
+  function lifeProfile(required: boolean): LifeProfile | null | "invalid" {
+    if (mode !== "signup") return null;
+    if (!required && !birthDate) return null;
+    const lifeExpectancy = Number(lifeYears);
+    const problem = validateLifeProfile(birthDate, lifeExpectancy);
+    setLifeError(problem);
+    return problem ? "invalid" : { birthDate, lifeExpectancy };
+  }
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    run(() =>
-      mode === "login"
-        ? signInWithEmail(email, password)
-        : signUpWithEmail(name.trim(), email, password)
-    );
+    if (mode === "login") {
+      run(() => signInWithEmail(email, password));
+      return;
+    }
+    const life = lifeProfile(true);
+    if (life === "invalid") return;
+    run(() => signUpWithEmail(name.trim(), email, password, life ?? undefined));
+  }
+
+  function handleGoogle() {
+    const life = lifeProfile(false);
+    if (life === "invalid") return;
+    run(() => signInWithGoogle(life ?? undefined));
   }
 
   return (
@@ -182,6 +213,15 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
                   />
                   {error && <FieldError>{error}</FieldError>}
                 </Field>
+                {mode === "signup" && (
+                  <LifeFields
+                    birthDate={birthDate}
+                    onBirthDateChange={setBirthDate}
+                    years={lifeYears}
+                    onYearsChange={setLifeYears}
+                    error={lifeError}
+                  />
+                )}
                 <Button
                   type="submit"
                   size="lg"
@@ -198,7 +238,7 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
                   size="lg"
                   className="w-full"
                   disabled={pending}
-                  onClick={() => run(() => signInWithGoogle())}
+                  onClick={handleGoogle}
                 >
                   <GoogleIcon />
                   Google
