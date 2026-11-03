@@ -1,8 +1,11 @@
 name: Send reminders
 
 on:
+  # GitHub's own schedule is best-effort and, on a quiet repo, may only run a
+  # few times a day. It's kept as a backup; the reliable trigger is an
+  # external cron (e.g. cron-job.org) calling workflow_dispatch every 15
+  # minutes. See README → Reminders → Reliable timing.
   schedule:
-    # Every 15 minutes. GitHub may start scheduled runs a few minutes late.
     - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:

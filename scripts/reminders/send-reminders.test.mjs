@@ -28,7 +28,11 @@ test("parseTime", () => {
 test("isDue respects time, window, lastSentDate and enabled", () => {
   assert.equal(isDue(base, now).due, true);
   assert.equal(isDue({ ...base, time: "20:15" }, now).due, false); // not yet
-  assert.equal(isDue({ ...base, time: "17:00" }, now).due, false); // >2h late
+  assert.equal(isDue({ ...base, time: "17:00" }, now).due, true); // late runs still send
+  // 23:55 in Singapore, reminder at 08:00: still due before midnight.
+  assert.equal(isDue({ ...base, time: "08:00" }, new Date("2026-11-01T15:55:00Z")).due, true);
+  // Just past midnight: a new day, not due until 20:00 again.
+  assert.equal(isDue({ ...base, lastSentDate: "2026-11-01" }, new Date("2026-11-01T16:05:00Z")).due, false);
   assert.equal(isDue({ ...base, lastSentDate: "2026-11-01" }, now).due, false);
   assert.equal(isDue({ ...base, lastSentDate: "2026-10-31" }, now).due, true);
   assert.equal(isDue({ ...base, enabled: false }, now).due, false);

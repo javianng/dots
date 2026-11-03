@@ -59,9 +59,10 @@ standard Web Push, so there's no paid service involved:
 - **Browser side**: `app/manifest.ts` + the service worker (`app/sw.ts`) make dots installable,
   and the Reminders switch in Settings subscribes the device
   (`lib/push.ts`, `components/reminder-settings.tsx`).
-- **Sender**: `scripts/reminders/send-reminders.mjs`, run every 15 minutes by
+- **Sender**: `scripts/reminders/send-reminders.mjs`, run by
   `.github/workflows/reminders.yml`. It reads due reminders from Firestore and
-  pushes only to users with habits still open today.
+  pushes only to users with habits still open today. A reminder is due any
+  time after the user's reminder time until local midnight, once per day.
 
 On **iPhone/iPad** (iOS 16.4+), notifications only work after dots is added to
 the Home Screen from Safari and opened from there.
@@ -82,6 +83,25 @@ the Home Screen from Safari and opened from there.
    `npx firebase-tools deploy --only firestore:rules`).
 6. Merge to the default branch (scheduled workflows only run from there). To
    test, run **Send reminders** manually from the Actions tab with `force` on.
+
+### Reliable timing
+
+GitHub's `schedule` trigger is best-effort: on a quiet repo it can run only a
+few times a day, so reminders arrive hours late or not at all. Trigger the
+workflow from a free external cron instead (the `schedule` stays as a backup):
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → generate a
+   token for **only this repo** with **Actions: Read and write**. Set an
+   expiry you'll remember to renew.
+2. At [cron-job.org](https://cron-job.org) (free), create a job:
+   - URL: `https://api.github.com/repos/<owner>/dots/actions/workflows/reminders.yml/dispatches`
+   - Schedule: every 15 minutes
+   - Advanced → Request method `POST`, headers
+     `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`,
+     `Content-Type: application/json`
+   - Request body: `{"ref":"main"}`
+3. Save and run once; a new **Send reminders** run should appear in Actions
+   (cron-job.org shows HTTP 204 on success).
 
 Data lives at `users/{uid}.reminder` (`enabled`, `time`, `timezone`,
 `lastSentDate`) and `users/{uid}/pushSubscriptions/{id}` (one per device).
