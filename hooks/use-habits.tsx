@@ -9,7 +9,8 @@ import {
 } from "firebase/firestore";
 
 import { completionsCollection, habitsCollection } from "@/lib/habits";
-import type { Habit } from "@/lib/types";
+import { dayTarget, parseGoalType, parseSchedule } from "@/lib/schedule";
+import type { Habit, RunningTimer } from "@/lib/types";
 
 type HabitMeta = Omit<Habit, "history" | "counts">;
 
@@ -51,7 +52,11 @@ function useHabitsRealtime(uid: string | undefined) {
             icon: data.icon as string | undefined,
             colorHex: (data.colorHex as string) ?? "#8b5cf6",
             streakGoal: (data.streakGoal as number | null) ?? null,
+            goalType: parseGoalType(data.goalType),
             completionsPerDay: Math.max(1, (data.completionsPerDay as number) ?? 1),
+            durationMinutes: Math.max(1, (data.durationMinutes as number) ?? 15),
+            schedule: parseSchedule(data.schedule),
+            timer: parseTimer(data.timer),
             createdAt:
               (data.createdAt as Timestamp | null)?.toMillis() ?? Date.now(),
           };
@@ -94,7 +99,7 @@ function useHabitsRealtime(uid: string | undefined) {
     const byHabit =
       historySnap && historySnap.uid === uid ? historySnap.byHabit : {};
     return metas.map((meta) => {
-      const target = meta.completionsPerDay;
+      const target = dayTarget(meta);
       const history: Record<string, boolean> = {};
       const counts: Record<string, number> = {};
       for (const [day, raw] of Object.entries(byHabit[meta.id] ?? {})) {
@@ -108,6 +113,14 @@ function useHabitsRealtime(uid: string | undefined) {
   }, [metas, historySnap, uid]);
 
   return { habits, loading: habits === null };
+}
+
+function parseTimer(raw: unknown): RunningTimer | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { startedAt, dateKey } = raw as Record<string, unknown>;
+  return typeof startedAt === "number" && typeof dateKey === "string"
+    ? { startedAt, dateKey }
+    : null;
 }
 
 const HabitsContext = React.createContext<{

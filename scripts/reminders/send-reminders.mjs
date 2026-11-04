@@ -4,7 +4,8 @@
  * .github/workflows/reminders.yml (every 15 minutes).
  *
  * For each user with `reminder.enabled`, if their local time has reached
- * `reminder.time` today and no reminder has gone out today, it counts habits not yet completed today and pushes to every
+ * `reminder.time` today and no reminder has gone out today, it counts habits due and not yet completed today (skipping rest days and
+ * met weekly/monthly targets) and pushes to every
  * subscribed device. Users who've already finished everything get no push.
  *
  * Env:
@@ -15,7 +16,7 @@
  */
 
 import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldPath, getFirestore } from "firebase-admin/firestore";
 import webpush from "web-push";
 
 const FORCE = process.env.FORCE === "true";
@@ -95,20 +96,62 @@ export function shouldMarkSent({ force = false, delivered, failed }) {
   return !force && (delivered > 0 || failed === 0);
 }
 
+/** Weekday (0 = Sunday) of a 'YYYY-MM-DD' key, timezone-free. */
+function weekdayOf(dateKey) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+/** First day ('YYYY-MM-DD') of the week (Monday) or month containing `dateKey`. */
+export function periodStartKey(dateKey, period) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  if (period === "month") return `${y}-${String(m).padStart(2, "0")}-01`;
+  const date = new Date(Date.UTC(y, m - 1, d - ((weekdayOf(dateKey) + 6) % 7)));
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Whether a habit should count towards today's reminder, given its schedule
+ * and how many days it's been completed so far this period. Mirrors
+ * lib/schedule.ts in the app: rest days and met weekly/monthly quotas don't nag.
+ */
+export function isHabitDue(schedule, dateKey, doneThisPeriod = 0) {
+  if (schedule?.type === "days" && Array.isArray(schedule.days) && schedule.days.length > 0) {
+    return schedule.days.includes(weekdayOf(dateKey));
+  }
+  if (schedule?.type === "period" && (schedule.period === "week" || schedule.period === "month")) {
+    return doneThisPeriod < Math.max(1, Number(schedule.times) || 1);
+  }
+  return true;
+}
+
+// A day with only some taps isn't done yet; older docs have no flag.
+const isCompleted = (snap) => snap.exists && snap.get("completed") !== false;
+
 async function countRemaining(db, uid, dateKey) {
   const habits = await db.collection(`users/${uid}/habits`).get();
   if (habits.empty) return { total: 0, remaining: 0 };
-  const done = await Promise.all(
-    habits.docs.map((h) =>
-      h.ref
-        .collection("completions")
-        .doc(dateKey)
-        .get()
-        // A day with only some taps isn't done yet; older docs have no flag.
-        .then((s) => s.exists && s.get("completed") !== false)
-    )
+  const results = await Promise.all(
+    habits.docs.map(async (h) => {
+      const schedule = h.get("schedule");
+      const completions = h.ref.collection("completions");
+      const today = await completions.doc(dateKey).get();
+      if (isCompleted(today)) return "done";
+      let doneThisPeriod = 0;
+      if (schedule?.type === "period") {
+        const since = await completions
+          .where(FieldPath.documentId(), ">=", periodStartKey(dateKey, schedule.period))
+          .where(FieldPath.documentId(), "<=", dateKey)
+          .get();
+        doneThisPeriod = since.docs.filter(isCompleted).length;
+      }
+      return isHabitDue(schedule, dateKey, doneThisPeriod) ? "due" : "rest";
+    })
   );
-  return { total: habits.size, remaining: done.filter((d) => !d).length };
+  return {
+    total: results.filter((r) => r !== "rest").length,
+    remaining: results.filter((r) => r === "due").length,
+  };
 }
 
 async function main() {

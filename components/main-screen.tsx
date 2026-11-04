@@ -5,7 +5,7 @@ import * as React from "react";
 import { ViewTransition, addTransitionType, startTransition } from "react";
 
 import { AppHeader } from "@/components/app-header";
-import { DayToggle } from "@/components/day-toggle";
+import { HabitDayToggle } from "@/components/day-toggle";
 import { HabitIcon } from "@/components/habit-icon";
 import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
 import { LifePanel } from "@/components/life-panel";
@@ -15,8 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ViewSwitcher, tabIndex, type ViewTab } from "@/components/view-switcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
-import { currentStreak, lastNDays, toDateKey, todayKey } from "@/lib/dates";
-import { checkIn, dayCount } from "@/lib/check-in";
+import { useNow } from "@/hooks/use-timer";
+import { checkIn, elapsedSeconds, formatClock, isTimerRunning } from "@/lib/check-in";
+import { lastNDays, toDateKey, todayKey } from "@/lib/dates";
+import { dayTarget, progressLabel, todayStatus } from "@/lib/schedule";
 import { habitHref } from "@/lib/routes";
 import { HabitIconTransition, nav } from "@/lib/transitions";
 import type { Habit } from "@/lib/types";
@@ -103,9 +105,10 @@ export function MainScreen() {
 
 /** Large-title header with today's progress ring, like Apple's Fitness/Reminders. */
 function TodaySummary({ habits }: { habits: Habit[] }) {
-  const today = todayKey();
-  const done = habits.filter((h) => h.history[today]).length;
-  const total = habits.length;
+  // Rest days (fixed-weekday habits not scheduled today) sit out of the count.
+  const statuses = habits.map((h) => todayStatus(h));
+  const done = statuses.filter((s) => s === "done").length;
+  const total = statuses.filter((s) => s !== "rest").length;
   const allDone = done === total;
 
   return (
@@ -120,10 +123,14 @@ function TodaySummary({ habits }: { habits: Habit[] }) {
         </span>
         <h1 className="text-[34px] leading-tight font-bold tracking-tight">Today</h1>
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {allDone ? "All done. Nice work." : `${done} of ${total} done`}
+          {total === 0
+            ? "Rest day. Nothing due."
+            : allDone
+              ? "All done. Nice work."
+              : `${done} of ${total} done`}
         </span>
       </div>
-      <ProgressRing value={total ? done / total : 0} />
+      <ProgressRing value={total ? done / total : 1} />
     </section>
   );
 }
@@ -185,10 +192,19 @@ function EmptyState() {
   );
 }
 
-function streakLabel(habit: Habit) {
-  const streak = currentStreak(habit.history);
-  if (streak > 0) return `${streak}-day streak`;
-  return Object.values(habit.history).some(Boolean) ? "No current streak" : "Not started";
+/** Streak / schedule line, or the live countdown while a timer is running. */
+function HabitSubtitle({ habit }: { habit: Habit }) {
+  const running = isTimerRunning(habit);
+  const now = useNow(running);
+  if (running && habit.timer) {
+    const left = dayTarget(habit) - elapsedSeconds(habit, habit.timer.dateKey, now);
+    return (
+      <span className="text-xs font-medium text-muted-foreground tabular-nums">
+        {formatClock(left)} left
+      </span>
+    );
+  }
+  return <span className="truncate text-xs text-muted-foreground">{progressLabel(habit)}</span>;
 }
 
 function riseProps(animateIn: boolean, i: number) {
@@ -252,19 +268,22 @@ function GridView({
                   <Icon habit={habit} />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-[15px] font-semibold">{habit.name}</span>
-                    <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
+                    <HabitSubtitle habit={habit} />
                   </span>
                 </HabitLink>
-                <DayToggle
-                  completed={!!habit.history[today]}
-                  count={dayCount(habit, today)}
-                  target={habit.completionsPerDay}
-                  colorHex={habit.colorHex}
+                <HabitDayToggle
+                  habit={habit}
+                  dateKey={today}
                   onToggle={() => onToggle(habit, today)}
                   label={`Mark ${habit.name} done today`}
                 />
               </div>
-              <Heatmap history={habit.history} colorHex={habit.colorHex} weeks={HEATMAP_WEEKS} />
+              <Heatmap
+                history={habit.history}
+                colorHex={habit.colorHex}
+                weeks={HEATMAP_WEEKS}
+                schedule={habit.schedule}
+              />
             </CardContent>
           </Card>
         );
@@ -326,12 +345,10 @@ function ListView({
               {days.map((day) => {
                 const key = toDateKey(day);
                 return (
-                  <DayToggle
+                  <HabitDayToggle
                     key={key}
-                    completed={!!habit.history[key]}
-                    count={dayCount(habit, key)}
-                    target={habit.completionsPerDay}
-                    colorHex={habit.colorHex}
+                    habit={habit}
+                    dateKey={key}
                     onToggle={() => onToggle(habit, key)}
                     label={`Mark ${habit.name} done on ${key}`}
                     className="size-8"
@@ -368,14 +385,12 @@ function CompactView({
               <Icon habit={habit} className="size-9" />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[15px] font-medium">{habit.name}</span>
-                <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
+                <HabitSubtitle habit={habit} />
               </span>
             </HabitLink>
-            <DayToggle
-              completed={!!habit.history[today]}
-              count={dayCount(habit, today)}
-              target={habit.completionsPerDay}
-              colorHex={habit.colorHex}
+            <HabitDayToggle
+              habit={habit}
+              dateKey={today}
               onToggle={() => onToggle(habit, today)}
               label={`Mark ${habit.name} done today`}
             />

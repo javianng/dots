@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
-import type { HabitDraft } from "@/lib/types";
+import type { HabitDraft, RunningTimer } from "@/lib/types";
 
 const BATCH_LIMIT = 500;
 
@@ -29,6 +29,11 @@ export async function createHabit(uid: string, draft: HabitDraft): Promise<void>
 
 export async function updateHabit(uid: string, habitId: string, draft: HabitDraft) {
   await updateDoc(doc(db, "users", uid, "habits", habitId), { ...draft });
+}
+
+/** Stops any running countdown without logging it (e.g. after a goal-type change). */
+export async function clearTimer(uid: string, habitId: string) {
+  await updateDoc(doc(db, "users", uid, "habits", habitId), { timer: null });
 }
 
 /**
@@ -76,4 +81,58 @@ export async function setDayCount(
   } else {
     await setDoc(ref, { count, completed: count >= target, completedAt: serverTimestamp() });
   }
+}
+
+/** Starts (or resumes) a habit's countdown. */
+export async function startTimer(uid: string, habitId: string, timer: RunningTimer) {
+  await updateDoc(doc(habitsCollection(uid), habitId), { timer });
+}
+
+/**
+ * Stops a habit's countdown and logs `seconds` for its day in one atomic
+ * write, so the timer and the logged time never disagree (on any device).
+ */
+export async function stopTimer(
+  uid: string,
+  habitId: string,
+  dateKey: string,
+  seconds: number,
+  target: number
+) {
+  const batch = writeBatch(db);
+  batch.update(doc(habitsCollection(uid), habitId), { timer: null });
+  const ref = doc(completionsCollection(uid, habitId), dateKey);
+  if (seconds <= 0) batch.delete(ref);
+  else
+    batch.set(ref, {
+      count: seconds,
+      completed: seconds >= target,
+      completedAt: serverTimestamp(),
+    });
+  await batch.commit();
+}
+
+/**
+ * Switching a habit between check-ins and a timer changes what a day's
+ * `count` means (taps vs seconds). Rewrites past days so finished days stay
+ * finished at the new target and part-done days are cleared.
+ */
+export async function rescaleCompletions(
+  uid: string,
+  habitId: string,
+  history: Record<string, boolean>,
+  target: number
+) {
+  const keys = Object.keys(history);
+  const commits: Promise<void>[] = [];
+  for (let i = 0; i < keys.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(db);
+    for (const key of keys.slice(i, i + BATCH_LIMIT)) {
+      const ref = doc(completionsCollection(uid, habitId), key);
+      if (history[key]) batch.set(ref, { count: target, completed: true }, { merge: true });
+      else batch.delete(ref);
+    }
+    commits.push(batch.commit());
+  }
+  await Promise.all(commits);
 }

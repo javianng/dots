@@ -2,9 +2,93 @@
 
 import * as React from "react";
 
+import { Pause, Play } from "lucide-react";
+
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { useNow } from "@/hooks/use-timer";
+import { elapsedSeconds, formatClock, isTimerRunning } from "@/lib/check-in";
+import { todayKey } from "@/lib/dates";
 import { habitTint } from "@/lib/palette";
+import { dayTarget, isScheduledDay } from "@/lib/schedule";
+import type { Habit } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+function parseKey(key: string) {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/**
+ * The toggle for one habit on one day, wired to the habit's goal:
+ * - count goals: tap ring / check (see DayToggle).
+ * - time goals today: a countdown ring with play / pause in the middle.
+ * - time goals on other days: a ring showing minutes logged; tap = done.
+ * Unscheduled (rest) days are drawn quieter but can still be logged.
+ */
+export function HabitDayToggle({
+  habit,
+  dateKey,
+  onToggle,
+  label,
+  className,
+}: {
+  habit: Habit;
+  dateKey: string;
+  onToggle: () => void;
+  label: string;
+  className?: string;
+}) {
+  const running = isTimerRunning(habit, dateKey);
+  const now = useNow(running);
+  const target = dayTarget(habit);
+  const completed = !!habit.history[dateKey];
+  const rest = !completed && !isScheduledDay(habit.schedule, parseKey(dateKey));
+  const restClass = rest ? "opacity-40" : undefined;
+
+  if (habit.goalType !== "time" || completed) {
+    return (
+      <DayToggle
+        completed={completed}
+        count={Math.min(habit.counts[dateKey] ?? 0, target)}
+        target={habit.goalType === "time" ? 1 : target}
+        colorHex={habit.colorHex}
+        onToggle={onToggle}
+        label={rest ? `${label} (rest day)` : label}
+        className={cn(restClass, className)}
+      />
+    );
+  }
+
+  const seconds = elapsedSeconds(habit, dateKey, now);
+  const isToday = dateKey === todayKey();
+  const remaining = formatClock(target - seconds);
+  return (
+    <ProgressRing
+      count={seconds}
+      target={target}
+      onTap={onToggle}
+      label={
+        isToday
+          ? `${running ? "Pause" : "Start"} ${habit.name} timer, ${remaining} left`
+          : `${label} (${Math.floor(seconds / 60)} of ${target / 60} minutes)`
+      }
+      className={cn(restClass, className)}
+      style={{ "--habit-tint": habitTint(habit.colorHex) } as React.CSSProperties}
+      center={
+        isToday ? (
+          running ? (
+            <Pause className="size-3.5 fill-current" strokeWidth={0} />
+          ) : (
+            <Play className="ml-0.5 size-3.5 fill-current" strokeWidth={0} />
+          )
+        ) : seconds > 0 ? (
+          `${Math.floor(seconds / 60)}′`
+        ) : null
+      }
+      pulse={running}
+    />
+  );
+}
 
 /**
  * Round, Reminders-style completion toggle, filled with the habit tint when
@@ -82,6 +166,8 @@ function ProgressRing({
   label,
   className,
   style,
+  center,
+  pulse,
 }: {
   count: number;
   target: number;
@@ -89,6 +175,10 @@ function ProgressRing({
   label: string;
   className?: string;
   style: React.CSSProperties;
+  /** Replaces the tap count in the middle (e.g. a play / pause glyph). */
+  center?: React.ReactNode;
+  /** Running countdown: tints the glyph so "live" reads at a glance. */
+  pulse?: boolean;
 }) {
   const segmented = target <= MAX_SEGMENTS;
   const gap = segmented ? 4 : 0;
@@ -143,8 +233,13 @@ function ProgressRing({
           />
         )}
       </svg>
-      <span className="text-muted-foreground text-[12px] font-semibold tabular-nums">
-        {count}
+      <span
+        className={cn(
+          "text-[12px] font-semibold tabular-nums",
+          pulse ? "text-(--habit-tint)" : "text-muted-foreground",
+        )}
+      >
+        {center === undefined ? count : center}
       </span>
     </button>
   );

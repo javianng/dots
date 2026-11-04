@@ -6,10 +6,16 @@ import { SyncStatus } from "@/components/sync-status";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { HabitsProvider } from "@/hooks/use-habits";
+import { TimerRunner } from "@/hooks/use-timer";
 
 function UserHabits({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  return <HabitsProvider uid={user?.uid}>{children}</HabitsProvider>;
+  return (
+    <HabitsProvider uid={user?.uid}>
+      {children}
+      <TimerRunner />
+    </HabitsProvider>
+  );
 }
 
 export function AppProviders({ children }: { children: React.ReactNode }) {

@@ -17,7 +17,8 @@ import {
   HABIT_ICONS,
   resolveHabitIconKey,
 } from "@/lib/habit-icons";
-import { createHabit, updateHabit } from "@/lib/habits";
+import { formatMinutes } from "@/lib/check-in";
+import { clearTimer, createHabit, rescaleCompletions, updateHabit } from "@/lib/habits";
 import {
   DEFAULT_HABIT_COLOR,
   HABIT_PALETTE,
@@ -26,12 +27,22 @@ import {
   habitTintAlpha,
 } from "@/lib/palette";
 import { habitHref } from "@/lib/routes";
+import { DAILY, MAX_TIMES, dayTarget, WEEKDAYS, scheduleLabel, streakUnit } from "@/lib/schedule";
 import { nav } from "@/lib/transitions";
-import type { Habit, HabitDraft } from "@/lib/types";
+import type { GoalType, Habit, HabitDraft, Schedule } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Keeps the ring readable and the stepper sane. */
 const MAX_DAILY_TARGET = 20;
+
+/** Stops the minutes stepper walks through (fine-grained when short). */
+const DURATION_STEPS = [1, 2, 3, 5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 150, 180, 240];
+
+type RepeatKind = "daily" | "days" | "week" | "month";
+
+function repeatKind(schedule: Schedule): RepeatKind {
+  return schedule.type === "period" ? schedule.period : schedule.type;
+}
 
 const bareInput =
   "h-12 rounded-none border-0 bg-transparent px-4 shadow-none focus-visible:ring-0 dark:bg-transparent";
@@ -55,9 +66,29 @@ export function HabitForm({ habit }: { habit?: Habit }) {
   const [completionsPerDay, setCompletionsPerDay] = React.useState(
     habit?.completionsPerDay ?? 1
   );
+  const [goalType, setGoalType] = React.useState<GoalType>(habit?.goalType ?? "count");
+  const [durationMinutes, setDurationMinutes] = React.useState(habit?.durationMinutes ?? 15);
+  const initialSchedule = habit?.schedule ?? DAILY;
+  const [repeat, setRepeat] = React.useState<RepeatKind>(repeatKind(initialSchedule));
+  const [days, setDays] = React.useState<number[]>(
+    initialSchedule.type === "days" ? initialSchedule.days : [1, 3, 5]
+  );
+  const [times, setTimes] = React.useState(
+    initialSchedule.type === "period" ? initialSchedule.times : 3
+  );
   const [pending, setPending] = React.useState(false);
 
-  const canSave = name.trim().length > 0 && !pending;
+  const schedule: Schedule =
+    repeat === "daily"
+      ? DAILY
+      : repeat === "days"
+        ? days.length === 0 || days.length === 7
+          ? DAILY
+          : { type: "days", days: [...days].sort() }
+        : { type: "period", period: repeat, times: Math.min(times, MAX_TIMES[repeat]) };
+  const unit = streakUnit(schedule);
+
+  const canSave = name.trim().length > 0 && !pending && !(repeat === "days" && days.length === 0);
 
   function dismiss(href = backHref) {
     router.push(href, { transitionTypes: nav("sheetDown") });
@@ -74,7 +105,10 @@ export function HabitForm({ habit }: { habit?: Habit }) {
       icon,
       colorHex,
       streakGoal: Number.isFinite(goal) && goal > 0 ? goal : null,
+      goalType,
       completionsPerDay,
+      durationMinutes,
+      schedule,
     };
     // Don't wait for the server: Firestore applies the change locally right
     // away (and queues it while offline), so the sheet can close now. A
@@ -83,6 +117,11 @@ export function HabitForm({ habit }: { habit?: Habit }) {
       ? updateHabit(user.uid, habit.id, draft)
       : createHabit(user.uid, draft);
     write.catch(() => toast.error(`Couldn't save "${draft.name}". Try again.`));
+    if (isEdit && habit.goalType !== draft.goalType) {
+      // Taps and seconds don't convert: keep finished days finished.
+      rescaleCompletions(user.uid, habit.id, habit.history, dayTarget(draft)).catch(() => {});
+      if (habit.timer) clearTimer(user.uid, habit.id).catch(() => {});
+    }
     haptic("success");
     dismiss(isEdit ? habitHref(habit.id) : "/");
   }
@@ -212,35 +251,121 @@ export function HabitForm({ habit }: { habit?: Habit }) {
           <Group
             label="Goal"
             footer={
-              completionsPerDay === 1
-                ? "One tap marks the day done."
-                : `Tap ${completionsPerDay} times to finish the day. Each tap fills part of the ring.`
+              goalType === "time"
+                ? `Tap play to count down ${formatMinutes(durationMinutes)}. Pause any time; the day is done when the timer runs out.`
+                : completionsPerDay === 1
+                  ? "One tap marks the day done."
+                  : `Tap ${completionsPerDay} times to finish the day. Each tap fills part of the ring.`
             }
           >
-            <Row label="Daily target">
-              <div className="flex h-8 items-center rounded-[9px] bg-foreground/[0.07]">
-                <StepperButton
-                  label="Decrease daily target"
-                  disabled={completionsPerDay <= 1}
-                  onClick={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
-                >
-                  <Minus />
-                </StepperButton>
-                <span
-                  aria-live="polite"
-                  className="min-w-16 px-1 text-center text-[15px] font-medium tabular-nums"
-                >
-                  {completionsPerDay}× a day
-                </span>
-                <StepperButton
-                  label="Increase daily target"
-                  disabled={completionsPerDay >= MAX_DAILY_TARGET}
-                  onClick={() => setCompletionsPerDay((n) => Math.min(MAX_DAILY_TARGET, n + 1))}
-                >
-                  <Plus />
-                </StepperButton>
-              </div>
-            </Row>
+            <div className="p-2">
+              <Segmented
+                label="Goal type"
+                value={goalType}
+                onChange={setGoalType}
+                options={[
+                  { value: "count", label: "Check-ins" },
+                  { value: "time", label: "Timer" },
+                ]}
+              />
+            </div>
+            <Divider />
+            {goalType === "count" ? (
+              <Row label="Daily target">
+                <Stepper
+                  value={`${completionsPerDay}× a day`}
+                  decLabel="Decrease daily target"
+                  incLabel="Increase daily target"
+                  canDec={completionsPerDay > 1}
+                  canInc={completionsPerDay < MAX_DAILY_TARGET}
+                  onDec={() => setCompletionsPerDay((n) => Math.max(1, n - 1))}
+                  onInc={() => setCompletionsPerDay((n) => Math.min(MAX_DAILY_TARGET, n + 1))}
+                />
+              </Row>
+            ) : (
+              <Row label="Duration">
+                <Stepper
+                  value={formatMinutes(durationMinutes)}
+                  decLabel="Shorter"
+                  incLabel="Longer"
+                  canDec={durationMinutes > DURATION_STEPS[0]}
+                  canInc={durationMinutes < DURATION_STEPS[DURATION_STEPS.length - 1]}
+                  onDec={() =>
+                    setDurationMinutes(
+                      (m) => [...DURATION_STEPS].reverse().find((s) => s < m) ?? m
+                    )
+                  }
+                  onInc={() => setDurationMinutes((m) => DURATION_STEPS.find((s) => s > m) ?? m)}
+                />
+              </Row>
+            )}
+          </Group>
+
+          <Group label="Repeat" footer={repeatFooter(schedule, repeat, days)}>
+            <div className="p-2">
+              <Segmented
+                label="Repeat"
+                value={repeat}
+                onChange={setRepeat}
+                options={[
+                  { value: "daily", label: "Daily" },
+                  { value: "days", label: "Days" },
+                  { value: "week", label: "Weekly" },
+                  { value: "month", label: "Monthly" },
+                ]}
+              />
+            </div>
+            {repeat === "days" && (
+              <>
+                <Divider />
+                <div className="flex justify-between gap-1.5 px-4 py-3" role="group" aria-label="Days of the week">
+                  {WEEKDAYS.map((d) => {
+                    const on = days.includes(d.value);
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        aria-label={d.long}
+                        aria-pressed={on}
+                        onClick={() => {
+                          haptic();
+                          setDays((prev) =>
+                            on ? prev.filter((x) => x !== d.value) : [...prev, d.value]
+                          );
+                        }}
+                        className={cn(
+                          "pressable flex size-10 items-center justify-center rounded-full text-[15px] font-semibold",
+                          !on && "bg-foreground/[0.07] text-muted-foreground"
+                        )}
+                        style={
+                          on
+                            ? { backgroundColor: habitTint(colorHex), color: "var(--on-tint)" }
+                            : undefined
+                        }
+                      >
+                        {d.short}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {(repeat === "week" || repeat === "month") && (
+              <>
+                <Divider />
+                <Row label="How often">
+                  <Stepper
+                    value={`${times}× a ${repeat}`}
+                    decLabel="Fewer times"
+                    incLabel="More times"
+                    canDec={times > 1}
+                    canInc={times < MAX_TIMES[repeat]}
+                    onDec={() => setTimes((n) => Math.max(1, n - 1))}
+                    onInc={() => setTimes((n) => Math.min(MAX_TIMES[repeat], n + 1))}
+                  />
+                </Row>
+              </>
+            )}
             <Divider />
             <Row label="Streak goal" htmlFor="habit-streak-goal">
               <div className="flex items-center gap-1.5">
@@ -255,7 +380,7 @@ export function HabitForm({ habit }: { habit?: Habit }) {
                   className="w-16 bg-transparent text-right text-[17px] text-muted-foreground tabular-nums outline-none placeholder:text-muted-foreground/60 focus:text-foreground"
                 />
                 {streakGoal.trim() !== "" && (
-                  <span className="text-[15px] text-muted-foreground">days</span>
+                  <span className="text-[15px] text-muted-foreground">{unit}s</span>
                 )}
               </div>
             </Row>
@@ -265,6 +390,91 @@ export function HabitForm({ habit }: { habit?: Habit }) {
         </div>
       </form>
     </main>
+  );
+}
+
+function repeatFooter(schedule: Schedule, repeat: RepeatKind, days: number[]) {
+  if (repeat === "days" && days.length === 0) return "Pick at least one day.";
+  if (schedule.type === "daily") return "Every day. Streaks count days in a row.";
+  if (schedule.type === "days")
+    return `${scheduleLabel(schedule)}. Other days are rest days: they don't break your streak.`;
+  return `Any ${schedule.times} ${schedule.times === 1 ? "day" : "days"} each ${schedule.period}${
+    schedule.period === "week" ? " (Mon–Sun)" : ""
+  }. Streaks count ${schedule.period}s that hit the target.`;
+}
+
+/** iOS segmented control. */
+function Segmented<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex rounded-[9px] bg-foreground/[0.07] p-0.5">
+      {options.map((o) => {
+        const selected = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => {
+              if (selected) return;
+              haptic();
+              onChange(o.value);
+            }}
+            className={cn(
+              "flex-1 rounded-[7px] py-1.5 text-[13px] font-medium transition-[background-color,box-shadow] duration-200 ease-(--ease-ios)",
+              selected ? "bg-card shadow-sm" : "text-muted-foreground"
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Stepper({
+  value,
+  decLabel,
+  incLabel,
+  canDec,
+  canInc,
+  onDec,
+  onInc,
+}: {
+  value: string;
+  decLabel: string;
+  incLabel: string;
+  canDec: boolean;
+  canInc: boolean;
+  onDec: () => void;
+  onInc: () => void;
+}) {
+  return (
+    <div className="flex h-8 items-center rounded-[9px] bg-foreground/[0.07]">
+      <StepperButton label={decLabel} disabled={!canDec} onClick={onDec}>
+        <Minus />
+      </StepperButton>
+      <span
+        aria-live="polite"
+        className="min-w-20 px-1 text-center text-[15px] font-medium whitespace-nowrap tabular-nums"
+      >
+        {value}
+      </span>
+      <StepperButton label={incLabel} disabled={!canInc} onClick={onInc}>
+        <Plus />
+      </StepperButton>
+    </div>
   );
 }
 

@@ -3,6 +3,8 @@ import { test } from "node:test";
 
 import {
   isDue,
+  isHabitDue,
+  periodStartKey,
   localNow,
   parseTime,
   reminderMessage,
@@ -52,4 +54,21 @@ test("reminderMessage", () => {
   assert.equal(reminderMessage(1, 3), "One habit left to fill in today.");
   assert.equal(reminderMessage(2, 3), "2 habits left to fill in today.");
   assert.equal(reminderMessage(3, 3), "None of your 3 habits are done yet today.");
+});
+
+test("periodStartKey finds Monday and the 1st", () => {
+  assert.equal(periodStartKey("2026-11-04", "week"), "2026-11-02"); // Wed → Mon
+  assert.equal(periodStartKey("2026-11-08", "week"), "2026-11-02"); // Sun → Mon
+  assert.equal(periodStartKey("2026-11-02", "week"), "2026-11-02");
+  assert.equal(periodStartKey("2026-11-04", "month"), "2026-11-01");
+});
+
+test("isHabitDue follows the schedule", () => {
+  assert.equal(isHabitDue(undefined, "2026-11-04"), true);
+  assert.equal(isHabitDue({ type: "daily" }, "2026-11-04"), true);
+  // 2026-11-04 is a Wednesday (3).
+  assert.equal(isHabitDue({ type: "days", days: [1, 3, 5] }, "2026-11-04"), true);
+  assert.equal(isHabitDue({ type: "days", days: [2, 4] }, "2026-11-04"), false);
+  assert.equal(isHabitDue({ type: "period", period: "week", times: 3 }, "2026-11-04", 2), true);
+  assert.equal(isHabitDue({ type: "period", period: "week", times: 3 }, "2026-11-04", 3), false);
 });

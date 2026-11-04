@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
-import { currentStreak } from "@/lib/dates";
-import { checkIn } from "@/lib/check-in";
+import { TimerCard } from "@/components/timer-card";
+import { checkIn, formatMinutes } from "@/lib/check-in";
+import { dayTarget, habitStreak, plural, scheduleLabel } from "@/lib/schedule";
 import { HabitIconTransition, PageTransition, nav } from "@/lib/transitions";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -59,8 +60,15 @@ function HabitDetail({ habitId }: { habitId: string }) {
     );
   }
 
-  const streak = currentStreak(habit.history);
+  const { value: streak, unit } = habitStreak(habit);
   const total = Object.values(habit.history).filter(Boolean).length;
+  const isTime = habit.goalType === "time";
+  const target = dayTarget(habit);
+  const totalMinutes = isTime
+    ? Math.round(
+        Object.values(habit.counts).reduce((sum, s) => sum + Math.min(s, target), 0) / 60
+      )
+    : 0;
   const goal = habit.streakGoal;
   const goalProgress = goal ? Math.min(1, streak / goal) : 0;
 
@@ -103,6 +111,15 @@ function HabitDetail({ habitId }: { habitId: string }) {
           <h1 className="truncate text-[28px] leading-tight font-bold tracking-tight">
             {habit.name}
           </h1>
+          <p className="text-[13px] font-medium text-muted-foreground">
+            {scheduleLabel(habit.schedule)}
+            {" · "}
+            {isTime
+              ? formatMinutes(habit.durationMinutes)
+              : habit.completionsPerDay > 1
+                ? `${habit.completionsPerDay}× a day`
+                : "Check off"}
+          </p>
           {habit.description && (
             <p className="line-clamp-2 text-[15px] text-muted-foreground">
               {habit.description}
@@ -113,16 +130,26 @@ function HabitDetail({ habitId }: { habitId: string }) {
 
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-6">
         <div className="flex flex-col gap-4">
+          {isTime && <TimerCard habit={habit} />}
+
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="Streak" value={streak} unit={streak === 1 ? "day" : "days"} />
+            <Stat label="Streak" value={streak} unit={plural(streak, unit).split(" ")[1]} />
             <Stat
               label="Goal"
               value={goal ?? "–"}
-              unit={goal ? "days" : "not set"}
+              unit={goal ? `${unit}s` : "not set"}
               progress={goal ? goalProgress : undefined}
               colorHex={habit.colorHex}
             />
-            <Stat label="Total" value={total} unit={total === 1 ? "day" : "days"} />
+            {isTime ? (
+              <Stat
+                label="Total"
+                value={totalMinutes >= 120 ? Math.round(totalMinutes / 6) / 10 : totalMinutes}
+                unit={totalMinutes >= 120 ? "hours" : "min"}
+              />
+            ) : (
+              <Stat label="Total" value={total} unit={total === 1 ? "day" : "days"} />
+            )}
           </div>
 
           <Card>
@@ -132,6 +159,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
                 history={habit.history}
                 colorHex={habit.colorHex}
                 weeks={HEATMAP_WEEKS}
+                schedule={habit.schedule}
                 showMonthLabels
                 showWeekdayLabels
               />
@@ -148,7 +176,7 @@ function HabitDetail({ habitId }: { habitId: string }) {
               onMonthOffsetChange={setCalMonthOffset}
               onToggleDay={(dateKey) => {
                 if (!user) return;
-                checkIn(user.uid, habit, dateKey);
+                checkIn(user.uid, habit, dateKey, { useTimer: false });
               }}
             />
           </CardContent>
