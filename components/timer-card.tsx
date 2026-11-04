@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useNow } from "@/hooks/use-timer";
 import {
+  clearDay,
   completeDay,
   elapsedSeconds,
   formatClock,
@@ -14,7 +15,6 @@ import {
   isTimerRunning,
   pauseTimer,
   playTimer,
-  resetTimer,
 } from "@/lib/check-in";
 import { todayKey } from "@/lib/dates";
 import { habitTint, habitTintAlpha } from "@/lib/palette";
@@ -34,6 +34,17 @@ const C = 2 * Math.PI * R;
  * and devices.
  */
 export function TimerCard({ habit }: { habit: Habit }) {
+  return (
+    <Card>
+      <CardContent className="py-2">
+        <TimerControls habit={habit} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The timer card's contents, for embedding in another card. */
+export function TimerControls({ habit }: { habit: Habit }) {
   const { user } = useAuth();
   const today = todayKey();
   const running = isTimerRunning(habit, today);
@@ -47,8 +58,7 @@ export function TimerCard({ habit }: { habit: Habit }) {
   const otherDayRunning = !!habit.timer && !running;
 
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center gap-5 py-2">
+    <div className="flex flex-col items-center gap-5">
         <div className="relative flex size-[200px] items-center justify-center">
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="absolute inset-0 -rotate-90" aria-hidden>
             <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={STROKE} className="stroke-foreground/10" />
@@ -88,7 +98,7 @@ export function TimerCard({ habit }: { habit: Habit }) {
           <RoundButton
             label="Reset today's time"
             disabled={!user || (seconds === 0 && !running)}
-            onClick={() => user && resetTimer(user.uid, habit, today)}
+            onClick={() => user && clearDay(user.uid, habit, today)}
           >
             <RotateCcw className="size-5" />
           </RoundButton>
@@ -128,8 +138,7 @@ export function TimerCard({ habit }: { habit: Habit }) {
             Stop the timer still running for {habit.timer.dateKey}
           </button>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 

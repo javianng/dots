@@ -23,6 +23,7 @@ export function Heatmap({
   colorHex,
   weeks,
   schedule,
+  skipped,
   showMonthLabels = false,
   showWeekdayLabels = false,
   className,
@@ -32,6 +33,8 @@ export function Heatmap({
   weeks: number;
   /** Fixed-weekday schedules fade their rest days. */
   schedule?: Schedule;
+  /** Skipped days get a dashed outline instead of a fill. */
+  skipped?: Record<string, true>;
   showMonthLabels?: boolean;
   showWeekdayLabels?: boolean;
   className?: string;
@@ -75,7 +78,8 @@ export function Heatmap({
               const key = toDateKey(day);
               const isFuture = key > todayKey;
               const completed = !isFuture && history[key];
-              const rest = !completed && !!schedule && !isScheduledDay(schedule, day);
+              const isSkipped = !completed && !!skipped?.[key];
+              const rest = !completed && !isSkipped && !!schedule && !isScheduledDay(schedule, day);
               const isCurrentMonth =
                 day.getMonth() === now.getMonth() &&
                 day.getFullYear() === now.getFullYear();
@@ -85,7 +89,8 @@ export function Heatmap({
                   title={key}
                   className={cn(
                     "aspect-square w-full rounded-squircle",
-                    !completed && !isCurrentMonth && "bg-muted",
+                    !completed && !isCurrentMonth && !isSkipped && "bg-muted",
+                    isSkipped && "border border-dashed border-foreground/30",
                     isFuture && "opacity-40",
                     rest && "opacity-35",
                     // Persimmon marks "now": today's dot.
@@ -94,7 +99,9 @@ export function Heatmap({
                   style={
                     completed
                       ? { backgroundColor: habitTint(colorHex) }
-                      : isCurrentMonth
+                      : isSkipped
+                        ? undefined
+                        : isCurrentMonth
                         ? { backgroundColor: habitTintAlpha(colorHex, 16) }
                         : undefined
                   }

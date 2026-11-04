@@ -43,5 +43,13 @@ This is **dots**, a habit-tracking app built on a `create-next-app` scaffold.
   `router.push(href, { transitionTypes })`). Keyframes and easing tokens
   (`--ease-ios`, `--ease-spring`) are in `app/globals.css`, along with `.material`,
   `.pressable`, `.tappable` utilities. iOS-style grouped lists: `components/grouped-list.tsx`.
+- **Habit model**: a habit has a goal type (`count` check-off, `amount`, `time`
+  countdown, `limit`), a `schedule` (daily / fixed weekdays / N× a week or month /
+  every N days) and optional times of day (`parts`). Goal and schedule rules live in
+  `lib/schedule.ts` (targets, today's status, streaks, labels); writes go through
+  `lib/check-in.ts`. A day's `count` means taps, seconds or units depending on the
+  goal; completion docs also carry `completed`, `skipped` and `slots`. Running timers
+  are stored on the habit doc and finished by `TimerRunner` (`hooks/use-timer.tsx`).
+  New Habit templates are in `lib/templates.ts`.
 - **Toasts**: Sonner (`components/ui/sonner.tsx`, top-centre). Completing a habit calls
   `celebrateCompletion()` in `components/celebrate-toast.tsx`; haptics in `lib/haptics.ts`.

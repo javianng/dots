@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Clock, Share } from "lucide-react";
+import { Bell, Clock, Share, Sunrise } from "lucide-react";
 
 import { Divider, Group, Row, RowIcon } from "@/components/grouped-list";
 import { FieldError } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import {
+  DEFAULT_MORNING_TIME,
   DEFAULT_REMINDER_TIME,
   currentTimeZone,
   disableReminders,
@@ -22,6 +23,7 @@ export function ReminderSettings({ uid }: { uid: string }) {
   const [support, setSupport] = React.useState<PushSupport | null>(null);
   const [enabled, setEnabled] = React.useState(false);
   const [time, setTime] = React.useState(DEFAULT_REMINDER_TIME);
+  const [morningTime, setMorningTime] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -37,6 +39,7 @@ export function ReminderSettings({ uid }: { uid: string }) {
       if (cancelled) return;
       setSupport(nextSupport);
       if (settings?.time) setTime(settings.time);
+      setMorningTime(settings?.morningTime ?? null);
       // "On" means reminders are enabled AND this device is subscribed.
       setEnabled(Boolean(settings?.enabled && subscription));
     })();
@@ -72,9 +75,20 @@ export function ReminderSettings({ uid }: { uid: string }) {
     }).catch(() => setError("Couldn't save the reminder time."));
   }
 
+  function handleMorningChange(next: string | null) {
+    setMorningTime(next);
+    saveReminderSettings(uid, {
+      morningTime: next,
+      timezone: currentTimeZone(),
+      lastMorningSentDate: null,
+    }).catch(() => setError("Couldn't save the morning reminder."));
+  }
+
   const unavailable = support !== "supported";
 
-  let footer: React.ReactNode = "A daily nudge if you haven't filled in today's dots.";
+  let footer: React.ReactNode = enabled
+    ? "A daily nudge if you haven't filled in today's dots, plus an optional morning one for habits set to the morning."
+    : "A daily nudge if you haven't filled in today's dots.";
   if (support === "ios-needs-install") {
     footer = (
       <>
@@ -137,6 +151,35 @@ export function ReminderSettings({ uid }: { uid: string }) {
               onChange={(e) => handleTimeChange(e.target.value)}
               className="rounded-lg bg-foreground/[0.07] px-2.5 py-1 text-[17px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
+          </Row>
+          <Divider inset={58} />
+          <Row
+            label="Morning habits"
+            htmlFor="reminder-morning"
+            icon={
+              <RowIcon className="bg-[#2e6f9e]">
+                <Sunrise />
+              </RowIcon>
+            }
+          >
+            <div className="flex items-center gap-2.5">
+              {morningTime && (
+                <input
+                  aria-label="Morning reminder time"
+                  type="time"
+                  value={morningTime}
+                  tabIndex={enabled ? 0 : -1}
+                  onChange={(e) => e.target.value && handleMorningChange(e.target.value)}
+                  className="rounded-lg bg-foreground/[0.07] px-2.5 py-1 text-[17px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                />
+              )}
+              <Switch
+                id="reminder-morning"
+                checked={!!morningTime}
+                disabled={!enabled}
+                onCheckedChange={(on) => handleMorningChange(on ? DEFAULT_MORNING_TIME : null)}
+              />
+            </div>
           </Row>
         </div>
       </div>

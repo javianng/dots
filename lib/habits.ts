@@ -64,22 +64,39 @@ export async function deleteHabit(uid: string, habitId: string) {
 }
 
 /**
- * Records how many times a habit was done on a day. Zero removes the day.
- * `completed` is stored alongside so readers (e.g. the reminders sender)
- * don't need the habit's target to know whether the day is finished.
+ * Records what was logged for a day (taps, seconds or units). Zero removes
+ * the day. `completed` is stored alongside so readers (e.g. the reminders
+ * sender) don't need the habit's goal to know whether the day is finished.
+ * Check-off habits with several times of day also store which ones are done.
  */
 export async function setDayCount(
   uid: string,
   habitId: string,
   dateKey: string,
   count: number,
-  target: number
+  completed: boolean,
+  slots?: string[]
 ) {
   const ref = doc(completionsCollection(uid, habitId), dateKey);
   if (count <= 0) {
     await deleteDoc(ref);
   } else {
-    await setDoc(ref, { count, completed: count >= target, completedAt: serverTimestamp() });
+    await setDoc(ref, {
+      count,
+      completed,
+      ...(slots ? { slots } : {}),
+      completedAt: serverTimestamp(),
+    });
+  }
+}
+
+/** Marks a day as skipped (or clears it). Skipping replaces anything logged that day. */
+export async function setSkipped(uid: string, habitId: string, dateKey: string, skip: boolean) {
+  const ref = doc(completionsCollection(uid, habitId), dateKey);
+  if (skip) {
+    await setDoc(ref, { count: 0, completed: false, skipped: true, completedAt: serverTimestamp() });
+  } else {
+    await deleteDoc(ref);
   }
 }
 
@@ -97,7 +114,7 @@ export async function stopTimer(
   habitId: string,
   dateKey: string,
   seconds: number,
-  target: number
+  completed: boolean
 ) {
   const batch = writeBatch(db);
   batch.update(doc(habitsCollection(uid), habitId), { timer: null });
@@ -106,22 +123,25 @@ export async function stopTimer(
   else
     batch.set(ref, {
       count: seconds,
-      completed: seconds >= target,
+      completed,
       completedAt: serverTimestamp(),
     });
   await batch.commit();
 }
 
 /**
- * Switching a habit between check-ins and a timer changes what a day's
- * `count` means (taps vs seconds). Rewrites past days so finished days stay
- * finished at the new target and part-done days are cleared.
+ * Switching a habit's goal type changes what a day's `count` means (taps,
+ * seconds, units). Rewrites past days so finished days stay finished at the
+ * new target and part-done days are cleared. Skipped days are left alone.
+ * Limit habits can't carry history over meaningfully, so switching to or
+ * from a limit just clears logged days.
  */
 export async function rescaleCompletions(
   uid: string,
   habitId: string,
   history: Record<string, boolean>,
-  target: number
+  target: number,
+  keepDone: boolean
 ) {
   const keys = Object.keys(history);
   const commits: Promise<void>[] = [];
@@ -129,7 +149,9 @@ export async function rescaleCompletions(
     const batch = writeBatch(db);
     for (const key of keys.slice(i, i + BATCH_LIMIT)) {
       const ref = doc(completionsCollection(uid, habitId), key);
-      if (history[key]) batch.set(ref, { count: target, completed: true }, { merge: true });
+      if (history[key] && keepDone && target > 0) {
+        batch.set(ref, { count: target, completed: true }, { merge: true });
+      }
       else batch.delete(ref);
     }
     commits.push(batch.commit());

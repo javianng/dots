@@ -6,15 +6,15 @@ import { todayKey } from "@/lib/dates";
 import { haptic } from "@/lib/haptics";
 import type { Habit } from "@/lib/types";
 import { habitTint } from "@/lib/palette";
-import { habitStreak, type StreakUnit } from "@/lib/schedule";
+import { habitStreak, streakPhrase, type StreakUnit } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 function subtitleFor(habit: Habit, streak: number, unit: StreakUnit, isToday: boolean) {
   if (habit.streakGoal && streak === habit.streakGoal) {
-    return `Goal reached: ${streak}-${unit} streak`;
+    return `Goal reached: ${streakPhrase(streak, unit)}`;
   }
   if (!isToday) return "Marked as done";
-  if (streak > 1) return `Done for today · ${streak}-${unit} streak`;
+  if (streak > 1) return `Done for today · ${streakPhrase(streak, unit)}`;
   return "Done for today";
 }
 
@@ -24,7 +24,7 @@ function subtitleFor(habit: Habit, streak: number, unit: StreakUnit, isToday: bo
  */
 export function celebrateCompletion(habit: Habit, dateKey: string) {
   const history = { ...habit.history, [dateKey]: true };
-  const { value: streak, unit } = habitStreak({ history, schedule: habit.schedule });
+  const { value: streak, unit } = habitStreak({ history, skipped: habit.skipped, schedule: habit.schedule });
   const isToday = dateKey === todayKey();
   const goalReached = !!habit.streakGoal && streak === habit.streakGoal;
 

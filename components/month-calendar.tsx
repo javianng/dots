@@ -14,21 +14,26 @@ function parseDateKey(key: string): Date {
 
 /**
  * Full-month calendar (Mo–Su) built on the shadcn Calendar (react-day-picker).
- * Today gets a ring; completed days get a tinted background. Past/today cells
- * toggle completion on click; future days are disabled.
+ * Today gets a persimmon ring; completed days get a tinted background;
+ * skipped days a dashed outline. Clicking a past day or today picks it (the
+ * day panel then logs that day); future days are disabled.
  */
 export function MonthCalendar({
   history,
+  skipped,
   colorHex,
   monthOffset,
   onMonthOffsetChange,
-  onToggleDay,
+  selectedKey,
+  onSelectDay,
 }: {
   history: Record<string, boolean>;
+  skipped: Record<string, true>;
   colorHex: string;
   monthOffset: number;
   onMonthOffsetChange: (offset: number) => void;
-  onToggleDay: (dateKey: string) => void;
+  selectedKey: string;
+  onSelectDay: (dateKey: string) => void;
 }) {
   const completed = React.useMemo(
     () =>
@@ -37,6 +42,8 @@ export function MonthCalendar({
         .map(parseDateKey),
     [history]
   );
+  const skippedDays = React.useMemo(() => Object.keys(skipped).map(parseDateKey), [skipped]);
+  const picked = React.useMemo(() => [parseDateKey(selectedKey)], [selectedKey]);
 
   return (
     <Calendar
@@ -48,15 +55,17 @@ export function MonthCalendar({
       }
       weekStartsOn={1}
       disabled={{ after: new Date() }}
-      modifiers={{ completed }}
+      modifiers={{ completed, skippedDay: skippedDays, picked }}
       modifiersClassNames={{
         // Tint the cell itself: the ghost day button is transparent, so the
         // tint shows through and its hover overlay still reads as feedback.
         completed:
           "bg-(--habit-tint) [&_button]:font-semibold [&_button]:text-(--on-tint) [&_button]:hover:text-(--on-tint)",
+        skippedDay: "[&_button]:border [&_button]:border-dashed [&_button]:border-foreground/30",
+        picked: "[&_button]:outline-2 [&_button]:outline-offset-2 [&_button]:outline-foreground",
       }}
       onDayClick={(day, modifiers) => {
-        if (!modifiers.disabled) onToggleDay(toDateKey(day));
+        if (!modifiers.disabled) onSelectDay(toDateKey(day));
       }}
       className="w-full p-0 [--cell-radius:9999px] [--cell-size:--spacing(10)] [&_button[data-day]]:text-[15px] [&_button[data-day]]:transition-[background-color,transform] [&_button[data-day]]:duration-200 [&_button[data-day]:active]:scale-90"
       classNames={{
