@@ -7,10 +7,10 @@ import { RequireAuth } from "@/components/require-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
-import { currentStreak } from "@/lib/dates";
-import { checkIn } from "@/lib/check-in";
+import { DayPanel } from "@/components/day-panel";
+import { todayKey } from "@/lib/dates";
+import { dayTarget, goalLabel, habitStreak, partsLabel, scheduleLabel, withUnit } from "@/lib/schedule";
 import { HabitIconTransition, PageTransition, nav } from "@/lib/transitions";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -39,9 +39,10 @@ function HabitDetailFromQuery() {
 
 function HabitDetail({ habitId }: { habitId: string }) {
   const router = useRouter();
-  const { user } = useAuth();
   const { habits, loading } = useHabits();
   const [calMonthOffset, setCalMonthOffset] = React.useState(0);
+  const [selectedKey, setSelectedKey] = React.useState(todayKey);
+  const panelRef = React.useRef<HTMLDivElement>(null);
 
   const habit = habits?.find((h) => h.id === habitId);
 
@@ -59,8 +60,18 @@ function HabitDetail({ habitId }: { habitId: string }) {
     );
   }
 
-  const streak = currentStreak(habit.history);
+  const { value: streak, unit } = habitStreak(habit);
   const total = Object.values(habit.history).filter(Boolean).length;
+  const isTime = habit.goalType === "time";
+  const target = dayTarget(habit);
+  const totalMinutes = isTime
+    ? Math.round(
+        Object.values(habit.counts).reduce((sum, s) => sum + Math.min(s, target), 0) / 60
+      )
+    : 0;
+  const totalAmount =
+    habit.goalType === "amount" ? Object.values(habit.counts).reduce((sum, n) => sum + n, 0) : 0;
+  const unitWord = unit === "time" ? "in a row" : `${unit}s`;
   const goal = habit.streakGoal;
   const goalProgress = goal ? Math.min(1, streak / goal) : 0;
 
@@ -103,6 +114,15 @@ function HabitDetail({ habitId }: { habitId: string }) {
           <h1 className="truncate text-[28px] leading-tight font-bold tracking-tight">
             {habit.name}
           </h1>
+          <p className="text-[13px] font-medium text-muted-foreground">
+            {[
+              goalLabel(habit),
+              scheduleLabel(habit.schedule),
+              habit.parts.length ? partsLabel(habit.parts) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
           {habit.description && (
             <p className="line-clamp-2 text-[15px] text-muted-foreground">
               {habit.description}
@@ -113,16 +133,44 @@ function HabitDetail({ habitId }: { habitId: string }) {
 
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-6">
         <div className="flex flex-col gap-4">
+          <div ref={panelRef} className="scroll-mt-20">
+            <DayPanel
+              habit={habit}
+              dateKey={selectedKey}
+              onBackToToday={() => setSelectedKey(todayKey())}
+            />
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="Streak" value={streak} unit={streak === 1 ? "day" : "days"} />
+            <Stat
+              label="Streak"
+              value={streak}
+              unit={unit === "time" ? "in a row" : streak === 1 ? unit : unitWord}
+            />
             <Stat
               label="Goal"
               value={goal ?? "–"}
-              unit={goal ? "days" : "not set"}
+              unit={goal ? unitWord : "not set"}
               progress={goal ? goalProgress : undefined}
               colorHex={habit.colorHex}
             />
-            <Stat label="Total" value={total} unit={total === 1 ? "day" : "days"} />
+            {habit.goalType === "amount" ? (
+              <Stat
+                label="Total"
+                value={totalAmount >= 10000 ? `${Math.round(totalAmount / 1000)}k` : withUnit(totalAmount, "")}
+                unit={habit.amountUnit || "logged"}
+              />
+            ) : habit.goalType === "limit" ? (
+              <Stat label="Kept" value={total} unit={total === 1 ? "day" : "days"} />
+            ) : isTime ? (
+              <Stat
+                label="Total"
+                value={totalMinutes >= 120 ? Math.round(totalMinutes / 6) / 10 : totalMinutes}
+                unit={totalMinutes >= 120 ? "hours" : "min"}
+              />
+            ) : (
+              <Stat label="Total" value={total} unit={total === 1 ? "day" : "days"} />
+            )}
           </div>
 
           <Card>
@@ -132,6 +180,8 @@ function HabitDetail({ habitId }: { habitId: string }) {
                 history={habit.history}
                 colorHex={habit.colorHex}
                 weeks={HEATMAP_WEEKS}
+                schedule={habit.schedule}
+                skipped={habit.skipped}
                 showMonthLabels
                 showWeekdayLabels
               />
@@ -143,12 +193,17 @@ function HabitDetail({ habitId }: { habitId: string }) {
           <CardContent>
             <MonthCalendar
               history={habit.history}
+              skipped={habit.skipped}
               colorHex={habit.colorHex}
               monthOffset={calMonthOffset}
               onMonthOffsetChange={setCalMonthOffset}
-              onToggleDay={(dateKey) => {
-                if (!user) return;
-                checkIn(user.uid, habit, dateKey);
+              selectedKey={selectedKey}
+              onSelectDay={(dateKey) => {
+                setSelectedKey(dateKey);
+                // On phones the panel sits above the calendar: bring it into view.
+                if (window.matchMedia("(max-width: 1023px)").matches) {
+                  panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
               }}
             />
           </CardContent>

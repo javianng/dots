@@ -5,7 +5,7 @@ import * as React from "react";
 import { ViewTransition, addTransitionType, startTransition } from "react";
 
 import { AppHeader } from "@/components/app-header";
-import { DayToggle } from "@/components/day-toggle";
+import { HabitDayToggle } from "@/components/day-toggle";
 import { HabitIcon } from "@/components/habit-icon";
 import { HEATMAP_WEEKS, Heatmap } from "@/components/heatmap";
 import { LifePanel } from "@/components/life-panel";
@@ -15,14 +15,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ViewSwitcher, tabIndex, type ViewTab } from "@/components/view-switcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useHabits } from "@/hooks/use-habits";
-import { currentStreak, lastNDays, toDateKey, todayKey } from "@/lib/dates";
-import { checkIn, dayCount } from "@/lib/check-in";
+import { useNow } from "@/hooks/use-timer";
+import { checkIn, elapsedSeconds, formatClock, isTimerRunning, usesSlots } from "@/lib/check-in";
+import { lastNDays, toDateKey, todayKey } from "@/lib/dates";
+import {
+  DAY_PARTS,
+  currentPart,
+  dayTarget,
+  partLabel,
+  progressLabel,
+  todayStatus,
+} from "@/lib/schedule";
 import { habitHref } from "@/lib/routes";
 import { HabitIconTransition, nav } from "@/lib/transitions";
-import type { Habit } from "@/lib/types";
+import type { DayPart, Habit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type ToggleFn = (habit: Habit, dateKey: string) => void;
+type ToggleFn = (habit: Habit, dateKey: string, part?: DayPart) => void;
 
 // Tab changes slide content toward the picked tab (keyframes in globals.css).
 const SLIDE_ENTER = { "view-next": "view-from-right", "view-prev": "view-from-left", default: "none" };
@@ -42,9 +51,9 @@ export function MainScreen() {
   }, [habits]);
 
   const toggle = React.useCallback<ToggleFn>(
-    (habit, dateKey) => {
+    (habit, dateKey, part) => {
       if (!user) return;
-      checkIn(user.uid, habit, dateKey);
+      checkIn(user.uid, habit, dateKey, { part });
     },
     [user]
   );
@@ -103,9 +112,10 @@ export function MainScreen() {
 
 /** Large-title header with today's progress ring, like Apple's Fitness/Reminders. */
 function TodaySummary({ habits }: { habits: Habit[] }) {
-  const today = todayKey();
-  const done = habits.filter((h) => h.history[today]).length;
-  const total = habits.length;
+  // Rest days (fixed-weekday habits not scheduled today) sit out of the count.
+  const statuses = habits.map((h) => todayStatus(h));
+  const done = statuses.filter((s) => s === "done").length;
+  const total = statuses.filter((s) => s !== "rest").length;
   const allDone = done === total;
 
   return (
@@ -120,10 +130,14 @@ function TodaySummary({ habits }: { habits: Habit[] }) {
         </span>
         <h1 className="text-[34px] leading-tight font-bold tracking-tight">Today</h1>
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {allDone ? "All done. Nice work." : `${done} of ${total} done`}
+          {total === 0
+            ? "Rest day. Nothing due."
+            : allDone
+              ? "All done. Nice work."
+              : `${done} of ${total} done`}
         </span>
       </div>
-      <ProgressRing value={total ? done / total : 0} />
+      <ProgressRing value={total ? done / total : 1} />
     </section>
   );
 }
@@ -185,10 +199,88 @@ function EmptyState() {
   );
 }
 
-function streakLabel(habit: Habit) {
-  const streak = currentStreak(habit.history);
-  if (streak > 0) return `${streak}-day streak`;
-  return Object.values(habit.history).some(Boolean) ? "No current streak" : "Not started";
+/** Streak / schedule line, or the live countdown while a timer is running. */
+function HabitSubtitle({ habit }: { habit: Habit }) {
+  const running = isTimerRunning(habit);
+  const now = useNow(running);
+  if (running && habit.timer) {
+    const left = dayTarget(habit) - elapsedSeconds(habit, habit.timer.dateKey, now);
+    return (
+      <span className="text-xs font-medium text-muted-foreground tabular-nums">
+        {formatClock(left)} left
+      </span>
+    );
+  }
+  const today = todayKey();
+  if (usesSlots(habit) && !habit.history[today] && !habit.skipped[today]) {
+    const done = habit.slots[today] ?? [];
+    return (
+      <span className="truncate text-xs text-muted-foreground">
+        {habit.parts.map((p) => `${partLabel(p)}${done.includes(p) ? " ✓" : ""}`).join(" · ")}
+      </span>
+    );
+  }
+  return <span className="truncate text-xs text-muted-foreground">{progressLabel(habit)}</span>;
+}
+
+interface Item {
+  habit: Habit;
+  /** For habits checked off once per time of day: which check this card shows. */
+  part?: DayPart;
+}
+
+interface Section {
+  key: string;
+  label: string | null;
+  isNow: boolean;
+  items: Item[];
+}
+
+/**
+ * Groups today's habits by time of day (Morning / Afternoon / Evening /
+ * Any time). With no times of day set anywhere there's one unlabelled
+ * section, so the screen looks exactly as before. A habit done several
+ * times a day shows once, under the time of day it's waiting on next, and
+ * moves along as each check is done.
+ */
+function sectionsFor(habits: Habit[]): Section[] {
+  if (!habits.some((h) => h.parts.length > 0)) {
+    return [{ key: "all", label: null, isNow: false, items: habits.map((habit) => ({ habit })) }];
+  }
+  const now = currentPart();
+  const today = todayKey();
+  const buckets = new Map<string, Item[]>();
+  for (const habit of habits) {
+    let part: DayPart | undefined = habit.parts[0];
+    if (usesSlots(habit)) {
+      const done = new Set(habit.slots[today] ?? []);
+      part =
+        habit.parts.includes(now) && !done.has(now)
+          ? now
+          : (habit.parts.find((p) => !done.has(p)) ?? habit.parts.at(-1));
+    }
+    const key = part ?? "any";
+    buckets.set(key, [...(buckets.get(key) ?? []), { habit, part: usesSlots(habit) ? part : undefined }]);
+  }
+  return [...DAY_PARTS.map((p) => p.value), "any" as const]
+    .filter((key) => buckets.has(key))
+    .map((key) => ({
+      key,
+      label: key === "any" ? "Any time" : partLabel(key),
+      isNow: key === now,
+      items: buckets.get(key)!,
+    }));
+}
+
+function SectionHeader({ section }: { section: Section }) {
+  if (!section.label) return null;
+  return (
+    <h2 className="flex items-center gap-2 px-1 pt-2 pb-1 text-[13px] font-semibold tracking-wide text-muted-foreground uppercase">
+      {section.label}
+      {/* Persimmon marks "now". */}
+      {section.isNow && <span className="size-1.5 rounded-full bg-accent" aria-label="now" />}
+    </h2>
+  );
 }
 
 function riseProps(animateIn: boolean, i: number) {
@@ -240,10 +332,15 @@ function GridView({
   animateIn: boolean;
 }) {
   const today = todayKey();
+  let i = 0;
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {habits.map((habit, i) => {
-        const rise = riseProps(animateIn, i);
+    <div className="flex flex-col gap-3">
+      {sectionsFor(habits).map((section) => (
+        <section key={section.key} className="flex flex-col gap-2">
+          <SectionHeader section={section} />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {section.items.map(({ habit, part }) => {
+        const rise = riseProps(animateIn, i++);
         return (
           <Card key={habit.id} className={cn("py-4", rise.className)} style={rise.style}>
             <CardContent className="flex flex-col gap-3.5 px-4">
@@ -252,25 +349,39 @@ function GridView({
                   <Icon habit={habit} />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-[15px] font-semibold">{habit.name}</span>
-                    <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
+                    <HabitSubtitle habit={habit} />
                   </span>
                 </HabitLink>
-                <DayToggle
-                  completed={!!habit.history[today]}
-                  count={dayCount(habit, today)}
-                  target={habit.completionsPerDay}
-                  colorHex={habit.colorHex}
-                  onToggle={() => onToggle(habit, today)}
-                  label={`Mark ${habit.name} done today`}
+                <HabitDayToggle
+                  habit={habit}
+                  dateKey={today}
+                  part={part}
+                  onToggle={() => onToggle(habit, today, part)}
+                  label={toggleLabel(habit, part)}
                 />
               </div>
-              <Heatmap history={habit.history} colorHex={habit.colorHex} weeks={HEATMAP_WEEKS} />
+              <Heatmap
+                history={habit.history}
+                skipped={habit.skipped}
+                colorHex={habit.colorHex}
+                weeks={HEATMAP_WEEKS}
+                schedule={habit.schedule}
+              />
             </CardContent>
           </Card>
         );
       })}
+          </div>
+        </section>
+      ))}
     </div>
   );
+}
+
+function toggleLabel(habit: Habit, part?: DayPart) {
+  return part
+    ? `Mark ${habit.name} done this ${partLabel(part).toLowerCase()}`
+    : `Mark ${habit.name} done today`;
 }
 
 function ListView({
@@ -326,12 +437,10 @@ function ListView({
               {days.map((day) => {
                 const key = toDateKey(day);
                 return (
-                  <DayToggle
+                  <HabitDayToggle
                     key={key}
-                    completed={!!habit.history[key]}
-                    count={dayCount(habit, key)}
-                    target={habit.completionsPerDay}
-                    colorHex={habit.colorHex}
+                    habit={habit}
+                    dateKey={key}
                     onToggle={() => onToggle(habit, key)}
                     label={`Mark ${habit.name} done on ${key}`}
                     className="size-8"
@@ -357,10 +466,14 @@ function CompactView({
 }) {
   const today = todayKey();
   return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
+    {sectionsFor(habits).map((section) => (
+    <section key={section.key} className="flex flex-col gap-2">
+    <SectionHeader section={section} />
     <Card
-      className={cn("mx-auto w-full max-w-xl gap-0 py-0", animateIn && "animate-rise")}
+      className={cn("w-full gap-0 py-0", animateIn && "animate-rise")}
     >
-      {habits.map((habit, i) => (
+      {section.items.map(({ habit, part }, i) => (
         <React.Fragment key={habit.id}>
           {i > 0 && <div className="ml-[60px] h-px bg-border" />}
           <div className="flex items-center gap-3 py-2.5 pr-3 pl-3">
@@ -368,20 +481,22 @@ function CompactView({
               <Icon habit={habit} className="size-9" />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[15px] font-medium">{habit.name}</span>
-                <span className="text-xs text-muted-foreground">{streakLabel(habit)}</span>
+                <HabitSubtitle habit={habit} />
               </span>
             </HabitLink>
-            <DayToggle
-              completed={!!habit.history[today]}
-              count={dayCount(habit, today)}
-              target={habit.completionsPerDay}
-              colorHex={habit.colorHex}
-              onToggle={() => onToggle(habit, today)}
-              label={`Mark ${habit.name} done today`}
+            <HabitDayToggle
+              habit={habit}
+              dateKey={today}
+              part={part}
+              onToggle={() => onToggle(habit, today, part)}
+              label={toggleLabel(habit, part)}
             />
           </div>
         </React.Fragment>
       ))}
     </Card>
+    </section>
+    ))}
+    </div>
   );
 }

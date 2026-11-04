@@ -9,9 +9,25 @@ import {
 } from "firebase/firestore";
 
 import { completionsCollection, habitsCollection } from "@/lib/habits";
-import type { Habit } from "@/lib/types";
+import { addDays, toDateKey } from "@/lib/dates";
+import {
+  dayTarget,
+  isDayMet,
+  parseGoalType,
+  parseParts,
+  parseSchedule,
+} from "@/lib/schedule";
+import type { DayPart, Habit, RunningTimer } from "@/lib/types";
 
-type HabitMeta = Omit<Habit, "history" | "counts">;
+type HabitMeta = Omit<Habit, "history" | "counts" | "skipped" | "slots">;
+
+/** One completion doc as the app needs it. */
+interface DayDoc {
+  /** null for docs saved before counts existed (plain check-offs). */
+  count: number | null;
+  skipped: boolean;
+  slots: DayPart[];
+}
 
 // Snapshots are tagged with the uid they were loaded for, so switching users
 // discards stale data by derivation instead of resetting state in an effect.
@@ -22,8 +38,7 @@ interface MetaSnapshot {
 
 interface HistorySnapshot {
   uid: string;
-  /** Per day: the logged count, or null for docs saved before counts existed. */
-  byHabit: Record<string, Record<string, number | null>>;
+  byHabit: Record<string, Record<string, DayDoc>>;
 }
 
 /**
@@ -51,7 +66,15 @@ function useHabitsRealtime(uid: string | undefined) {
             icon: data.icon as string | undefined,
             colorHex: (data.colorHex as string) ?? "#8b5cf6",
             streakGoal: (data.streakGoal as number | null) ?? null,
+            goalType: parseGoalType(data.goalType),
             completionsPerDay: Math.max(1, (data.completionsPerDay as number) ?? 1),
+            durationMinutes: Math.max(1, (data.durationMinutes as number) ?? 15),
+            amountTarget: Math.max(0, num(data.amountTarget, 1)),
+            amountUnit: typeof data.amountUnit === "string" ? data.amountUnit : "",
+            amountStep: Math.max(0.01, num(data.amountStep, 1)),
+            parts: parseParts(data.parts),
+            schedule: parseSchedule(data.schedule),
+            timer: parseTimer(data.timer),
             createdAt:
               (data.createdAt as Timestamp | null)?.toMillis() ?? Date.now(),
           };
@@ -72,10 +95,14 @@ function useHabitsRealtime(uid: string | undefined) {
     if (!uid || !habitIds) return;
     const unsubs = habitIds.split("\n").map((habitId) =>
       onSnapshot(completionsCollection(uid, habitId), (snap) => {
-        const history: Record<string, number | null> = {};
+        const history: Record<string, DayDoc> = {};
         for (const d of snap.docs) {
-          const count = d.data().count;
-          history[d.id] = typeof count === "number" ? count : null;
+          const data = d.data();
+          history[d.id] = {
+            count: typeof data.count === "number" ? data.count : null,
+            skipped: data.skipped === true,
+            slots: parseParts(data.slots),
+          };
         }
         setHistorySnap((prev) => ({
           uid,
@@ -93,21 +120,49 @@ function useHabitsRealtime(uid: string | undefined) {
     if (!metas) return null;
     const byHabit =
       historySnap && historySnap.uid === uid ? historySnap.byHabit : {};
+    const today = toDateKey(new Date());
     return metas.map((meta) => {
-      const target = meta.completionsPerDay;
+      const target = dayTarget(meta);
       const history: Record<string, boolean> = {};
       const counts: Record<string, number> = {};
-      for (const [day, raw] of Object.entries(byHabit[meta.id] ?? {})) {
-        // Days saved before counts existed were plain check-offs: treat as done.
-        const count = raw ?? target;
-        counts[day] = count;
-        history[day] = count >= target;
+      const skipped: Record<string, true> = {};
+      const slots: Record<string, DayPart[]> = {};
+      if (meta.goalType === "limit") {
+        // A limit is kept on every day nothing was logged, from the day the
+        // habit was made; logged days are checked against the limit below.
+        for (let d = new Date(meta.createdAt); toDateKey(d) <= today; d = addDays(d, 1)) {
+          history[toDateKey(d)] = true;
+        }
       }
-      return { ...meta, history, counts };
+      for (const [day, doc] of Object.entries(byHabit[meta.id] ?? {})) {
+        if (doc.skipped) {
+          skipped[day] = true;
+          delete history[day];
+          continue;
+        }
+        // Days saved before counts existed were plain check-offs: treat as done.
+        const count = doc.count ?? target;
+        counts[day] = count;
+        history[day] = isDayMet(meta, count);
+        if (doc.slots.length) slots[day] = doc.slots;
+      }
+      return { ...meta, history, counts, skipped, slots };
     });
   }, [metas, historySnap, uid]);
 
   return { habits, loading: habits === null };
+}
+
+function num(raw: unknown, fallback: number) {
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : fallback;
+}
+
+function parseTimer(raw: unknown): RunningTimer | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { startedAt, dateKey } = raw as Record<string, unknown>;
+  return typeof startedAt === "number" && typeof dateKey === "string"
+    ? { startedAt, dateKey }
+    : null;
 }
 
 const HabitsContext = React.createContext<{

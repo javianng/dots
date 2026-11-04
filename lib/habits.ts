@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
-import type { HabitDraft } from "@/lib/types";
+import type { HabitDraft, RunningTimer } from "@/lib/types";
 
 const BATCH_LIMIT = 500;
 
@@ -29,6 +29,11 @@ export async function createHabit(uid: string, draft: HabitDraft): Promise<void>
 
 export async function updateHabit(uid: string, habitId: string, draft: HabitDraft) {
   await updateDoc(doc(db, "users", uid, "habits", habitId), { ...draft });
+}
+
+/** Stops any running countdown without logging it (e.g. after a goal-type change). */
+export async function clearTimer(uid: string, habitId: string) {
+  await updateDoc(doc(db, "users", uid, "habits", habitId), { timer: null });
 }
 
 /**
@@ -59,21 +64,97 @@ export async function deleteHabit(uid: string, habitId: string) {
 }
 
 /**
- * Records how many times a habit was done on a day. Zero removes the day.
- * `completed` is stored alongside so readers (e.g. the reminders sender)
- * don't need the habit's target to know whether the day is finished.
+ * Records what was logged for a day (taps, seconds or units). Zero removes
+ * the day. `completed` is stored alongside so readers (e.g. the reminders
+ * sender) don't need the habit's goal to know whether the day is finished.
+ * Check-off habits with several times of day also store which ones are done.
  */
 export async function setDayCount(
   uid: string,
   habitId: string,
   dateKey: string,
   count: number,
-  target: number
+  completed: boolean,
+  slots?: string[]
 ) {
   const ref = doc(completionsCollection(uid, habitId), dateKey);
   if (count <= 0) {
     await deleteDoc(ref);
   } else {
-    await setDoc(ref, { count, completed: count >= target, completedAt: serverTimestamp() });
+    await setDoc(ref, {
+      count,
+      completed,
+      ...(slots ? { slots } : {}),
+      completedAt: serverTimestamp(),
+    });
   }
+}
+
+/** Marks a day as skipped (or clears it). Skipping replaces anything logged that day. */
+export async function setSkipped(uid: string, habitId: string, dateKey: string, skip: boolean) {
+  const ref = doc(completionsCollection(uid, habitId), dateKey);
+  if (skip) {
+    await setDoc(ref, { count: 0, completed: false, skipped: true, completedAt: serverTimestamp() });
+  } else {
+    await deleteDoc(ref);
+  }
+}
+
+/** Starts (or resumes) a habit's countdown. */
+export async function startTimer(uid: string, habitId: string, timer: RunningTimer) {
+  await updateDoc(doc(habitsCollection(uid), habitId), { timer });
+}
+
+/**
+ * Stops a habit's countdown and logs `seconds` for its day in one atomic
+ * write, so the timer and the logged time never disagree (on any device).
+ */
+export async function stopTimer(
+  uid: string,
+  habitId: string,
+  dateKey: string,
+  seconds: number,
+  completed: boolean
+) {
+  const batch = writeBatch(db);
+  batch.update(doc(habitsCollection(uid), habitId), { timer: null });
+  const ref = doc(completionsCollection(uid, habitId), dateKey);
+  if (seconds <= 0) batch.delete(ref);
+  else
+    batch.set(ref, {
+      count: seconds,
+      completed,
+      completedAt: serverTimestamp(),
+    });
+  await batch.commit();
+}
+
+/**
+ * Switching a habit's goal type changes what a day's `count` means (taps,
+ * seconds, units). Rewrites past days so finished days stay finished at the
+ * new target and part-done days are cleared. Skipped days are left alone.
+ * Limit habits can't carry history over meaningfully, so switching to or
+ * from a limit just clears logged days.
+ */
+export async function rescaleCompletions(
+  uid: string,
+  habitId: string,
+  history: Record<string, boolean>,
+  target: number,
+  keepDone: boolean
+) {
+  const keys = Object.keys(history);
+  const commits: Promise<void>[] = [];
+  for (let i = 0; i < keys.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(db);
+    for (const key of keys.slice(i, i + BATCH_LIMIT)) {
+      const ref = doc(completionsCollection(uid, habitId), key);
+      if (history[key] && keepDone && target > 0) {
+        batch.set(ref, { count: target, completed: true }, { merge: true });
+      }
+      else batch.delete(ref);
+    }
+    commits.push(batch.commit());
+  }
+  await Promise.all(commits);
 }

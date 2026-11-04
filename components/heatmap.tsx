@@ -5,6 +5,8 @@ import * as React from "react";
 import { heatmapWeeks, MONTH_LABELS, toDateKey } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { habitTint, habitTintAlpha } from "@/lib/palette";
+import { isScheduledDay } from "@/lib/schedule";
+import type { Schedule } from "@/lib/types";
 
 // Monday-first rows; labels on Tue/Thu/Sat like GitHub's contribution graph.
 const WEEKDAY_ROW_LABELS = ["", "Tue", "", "Thu", "", "Sat", ""];
@@ -20,6 +22,8 @@ export function Heatmap({
   history,
   colorHex,
   weeks,
+  schedule,
+  skipped,
   showMonthLabels = false,
   showWeekdayLabels = false,
   className,
@@ -27,6 +31,10 @@ export function Heatmap({
   history: Record<string, boolean>;
   colorHex: string;
   weeks: number;
+  /** Fixed-weekday schedules fade their rest days. */
+  schedule?: Schedule;
+  /** Skipped days get a dashed outline instead of a fill. */
+  skipped?: Record<string, true>;
   showMonthLabels?: boolean;
   showWeekdayLabels?: boolean;
   className?: string;
@@ -70,6 +78,8 @@ export function Heatmap({
               const key = toDateKey(day);
               const isFuture = key > todayKey;
               const completed = !isFuture && history[key];
+              const isSkipped = !completed && !!skipped?.[key];
+              const rest = !completed && !isSkipped && !!schedule && !isScheduledDay(schedule, day);
               const isCurrentMonth =
                 day.getMonth() === now.getMonth() &&
                 day.getFullYear() === now.getFullYear();
@@ -79,15 +89,19 @@ export function Heatmap({
                   title={key}
                   className={cn(
                     "aspect-square w-full rounded-squircle",
-                    !completed && !isCurrentMonth && "bg-muted",
+                    !completed && !isCurrentMonth && !isSkipped && "bg-muted",
+                    isSkipped && "border border-dashed border-foreground/30",
                     isFuture && "opacity-40",
+                    rest && "opacity-35",
                     // Persimmon marks "now": today's dot.
                     key === todayKey && "relative z-10 ring-[1.5px] ring-accent ring-offset-1 ring-offset-card"
                   )}
                   style={
                     completed
                       ? { backgroundColor: habitTint(colorHex) }
-                      : isCurrentMonth
+                      : isSkipped
+                        ? undefined
+                        : isCurrentMonth
                         ? { backgroundColor: habitTintAlpha(colorHex, 16) }
                         : undefined
                   }

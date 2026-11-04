@@ -28,9 +28,13 @@ export interface ReminderSettings {
   timezone: string;
   /** Local 'YYYY-MM-DD' of the last reminder sent (written by the sender). */
   lastSentDate?: string | null;
+  /** Optional morning nudge for morning habits, "HH:mm"; null = off. */
+  morningTime?: string | null;
+  lastMorningSentDate?: string | null;
 }
 
 export const DEFAULT_REMINDER_TIME = "20:00";
+export const DEFAULT_MORNING_TIME = "07:30";
 
 export type PushSupport =
   | "supported"

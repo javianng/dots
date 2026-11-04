@@ -3,6 +3,10 @@ import { test } from "node:test";
 
 import {
   isDue,
+  isHabitDue,
+  isMorningDue,
+  periodStartKey,
+  windowStartKey,
   localNow,
   parseTime,
   reminderMessage,
@@ -52,4 +56,45 @@ test("reminderMessage", () => {
   assert.equal(reminderMessage(1, 3), "One habit left to fill in today.");
   assert.equal(reminderMessage(2, 3), "2 habits left to fill in today.");
   assert.equal(reminderMessage(3, 3), "None of your 3 habits are done yet today.");
+});
+
+test("periodStartKey finds Monday and the 1st", () => {
+  assert.equal(periodStartKey("2026-11-04", "week"), "2026-11-02"); // Wed → Mon
+  assert.equal(periodStartKey("2026-11-08", "week"), "2026-11-02"); // Sun → Mon
+  assert.equal(periodStartKey("2026-11-02", "week"), "2026-11-02");
+  assert.equal(periodStartKey("2026-11-04", "month"), "2026-11-01");
+});
+
+test("isHabitDue follows the schedule", () => {
+  assert.equal(isHabitDue({}, "2026-11-04"), true);
+  assert.equal(isHabitDue({ schedule: { type: "daily" } }, "2026-11-04"), true);
+  // 2026-11-04 is a Wednesday (3).
+  assert.equal(isHabitDue({ schedule: { type: "days", days: [1, 3, 5] } }, "2026-11-04"), true);
+  assert.equal(isHabitDue({ schedule: { type: "days", days: [2, 4] } }, "2026-11-04"), false);
+  const weekly = { schedule: { type: "period", period: "week", times: 3 } };
+  assert.equal(isHabitDue(weekly, "2026-11-04", 2), true);
+  assert.equal(isHabitDue(weekly, "2026-11-04", 3), false);
+  const every3 = { schedule: { type: "interval", every: 3 } };
+  assert.equal(isHabitDue(every3, "2026-11-04", 0), true);
+  assert.equal(isHabitDue(every3, "2026-11-04", 1), false);
+  assert.equal(isHabitDue({ goalType: "limit" }, "2026-11-04"), false);
+});
+
+test("windowStartKey", () => {
+  assert.equal(windowStartKey({ type: "interval", every: 3 }, "2026-11-04"), "2026-11-02");
+  assert.equal(windowStartKey({ type: "period", period: "month", times: 2 }, "2026-11-04"), "2026-11-01");
+  assert.equal(windowStartKey({ type: "daily" }, "2026-11-04"), null);
+});
+
+test("isMorningDue only fires before noon", () => {
+  const r = { enabled: true, time: "20:00", morningTime: "08:00", timezone: "Asia/Singapore" };
+  // 01:30 UTC = 09:30 SGT
+  assert.equal(isMorningDue(r, new Date("2026-11-04T01:30:00Z")).due, true);
+  // 12:10 UTC = 20:10 SGT
+  assert.equal(isMorningDue(r, now).due, false);
+  assert.equal(isMorningDue({ ...r, morningTime: null }, new Date("2026-11-04T01:30:00Z")).due, false);
+  assert.equal(
+    isMorningDue({ ...r, lastMorningSentDate: "2026-11-04" }, new Date("2026-11-04T01:30:00Z")).due,
+    false
+  );
 });
