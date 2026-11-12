@@ -1,19 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <style>
-    .bg { fill: #f5f2ec; }
-    .ink { fill: #16171c; }
-    .mid { fill: #5c5a55; }
-    .soft { fill: #8a8780; }
-    @media (prefers-color-scheme: dark) {
-      .bg { fill: #1f1e1c; }
-      .ink { fill: #f2efe8; }
-      .mid { fill: #a6a39c; }
-      .soft { fill: #77746e; }
-    }
-  </style>
-  <rect class="bg" width="64" height="64" rx="15"/>
-  <rect class="ink" x="10" y="10" width="20" height="20" rx="6.5"/>
-  <rect class="mid" x="34" y="10" width="20" height="20" rx="6.5"/>
-  <rect class="soft" x="10" y="34" width="20" height="20" rx="6.5"/>
-  <rect class="ink" x="34" y="34" width="20" height="20" rx="6.5"/>
+<style>.bg{fill:#f5f2ec}.ink{fill:#16171c}.mid{fill:#5c5a55}.soft{fill:#8a8780}.empty{fill:#e3ded5}.kaki{fill:#e1602f}@media (prefers-color-scheme: dark){.bg{fill:#1f1e1c}.ink{fill:#f2efe8}.mid{fill:#a6a39c}.soft{fill:#77746e}.empty{fill:#34322f}.kaki{fill:#f07a4f}}</style>
+<rect class="bg" width="64" height="64" rx="15"/>
+<rect class="ink" x="10.0" y="10.0" width="12.94" height="12.94" rx="4.21"/>
+<rect class="empty" x="25.53" y="10.0" width="12.94" height="12.94" rx="4.21"/>
+<rect class="ink" x="41.06" y="10.0" width="12.94" height="12.94" rx="4.21"/>
+<rect class="ink" x="10.0" y="25.53" width="12.94" height="12.94" rx="4.21"/>
+<rect class="ink" x="25.53" y="25.53" width="12.94" height="12.94" rx="4.21"/>
+<rect class="empty" x="41.06" y="25.53" width="12.94" height="12.94" rx="4.21"/>
+<rect class="ink" x="10.0" y="41.06" width="12.94" height="12.94" rx="4.21"/>
+<rect class="ink" x="25.53" y="41.06" width="12.94" height="12.94" rx="4.21"/>
+<rect class="kaki" x="41.06" y="41.06" width="12.94" height="12.94" rx="4.21"/>
 </svg>
