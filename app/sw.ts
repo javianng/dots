@@ -5,6 +5,7 @@
  * - Precaches the app's pages and static assets so dots opens with no signal.
  * - Caches Next's page data (RSC) under a stable key so in-app navigation
  *   works offline instead of falling back to a full page reload.
+ * - Stops Firebase's sign-in check from holding up launch on a weak signal.
  * - Caches other requests at runtime with Serwist's Next.js defaults.
  * - Receives Web Push reminders and opens the app on tap.
  *
@@ -13,7 +14,7 @@
  */
 import { defaultCache } from "@serwist/turbopack/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { ExpirationPlugin, NetworkFirst, Serwist } from "serwist";
+import { ExpirationPlugin, NetworkFirst, NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -83,6 +84,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// --- Sign-in check on launch ---------------------------------------------
+//
+// On every launch Firebase Auth checks the saved user with Google
+// (accounts:lookup, plus a token refresh if it's over an hour old) before it
+// reports who's signed in, and Firestore waits for that before reading even
+// its local cache. On a weak signal the check can hang for 30s+, leaving dots
+// on skeletons. A network failure keeps the user signed in, so give up after
+// 5 seconds and let dots open from its saved data; Firebase checks again later.
+
+const authCheck = {
+  matcher: ({ url }: { url: URL }) =>
+    (url.hostname === "identitytoolkit.googleapis.com" && url.pathname === "/v1/accounts:lookup") ||
+    (url.hostname === "securetoken.googleapis.com" && url.pathname === "/v1/token"),
+  method: "POST" as const,
+  handler: new NetworkOnly({ networkTimeoutSeconds: 5 }),
+};
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   precacheOptions: {
@@ -93,7 +111,7 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: [pageData, ...defaultCache],
+  runtimeCaching: [authCheck, pageData, ...defaultCache],
   fallbacks: {
     entries: [
       {
