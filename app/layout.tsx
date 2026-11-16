@@ -1,4 +1,5 @@
 import { AppProviders } from "@/components/app-providers";
+import { OfflineWarmup } from "@/components/offline-warmup";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider, themeInitScript } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AppProviders>{children}</AppProviders>
           <ServiceWorkerRegister />
+          <OfflineWarmup />
         </ThemeProvider>
       </body>
     </html>
