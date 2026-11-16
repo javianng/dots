@@ -47,8 +47,14 @@ dots works without a connection:
   queued on the device and sync on their own when it's back online. Saves and
   deletes don't wait for the server.
 - **App shell**: `app/sw.ts` (bundled by Serwist via `app/serwist/[path]/route.ts`)
-  precaches the pages and static assets. Habit screens use `/habit?id=…` so one
-  cached page serves every habit. Pages that aren't cached fall back to `/~offline`.
+  precaches every page (listed in `lib/offline-pages.ts`) and the static assets.
+  Habit screens use `/habit?id=…` so one cached page serves every habit. Pages
+  that aren't cached fall back to `/~offline`.
+- **Moving between screens**: Next fetches each screen's data as RSC requests
+  whose `_rsc` value changes with where you came from, so `app/sw.ts` saves them
+  by page and segment instead, and `components/offline-warmup.tsx` prefetches
+  every page whenever dots opens online. Taps offline then stay in the app
+  instead of reloading the page.
 - Pages are only precached in production builds (`npm run build && npm run start`), so test offline there.
 
 ## Reminders (Web Push)
