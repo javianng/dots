@@ -1,0 +1,7 @@
+// Shared build settings. Your Firebase project's values go in
+// Firebase.xcconfig (not committed): copy Firebase.example.xcconfig.
+
+// Google Sign-In's return URL scheme. Placeholder until Firebase.xcconfig sets it.
+REVERSED_CLIENT_ID = com.googleusercontent.apps.not-configured
+
+#include? "Firebase.xcconfig"
