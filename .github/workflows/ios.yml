@@ -90,6 +90,15 @@ jobs:
             shoot "$appearance-7-settings" -demoScreen settings
             shoot "$appearance-8-auth" -demoScreen auth
           done
+      - name: Print screenshots (small JPEGs, base64) for review
+        run: |
+          cd shots
+          for f in *.png; do
+            sips -s format jpeg -s formatOptions 55 -Z 1000 "$f" --out "/tmp/${f%.png}.jpg" >/dev/null
+            echo "=====SHOT ${f%.png}"
+            base64 -i "/tmp/${f%.png}.jpg" | fold -w 3000
+            echo "=====END"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
