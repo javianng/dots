@@ -48,6 +48,24 @@ final class HabitStore {
 
     func habit(_ id: String) -> Habit? { habits.first { $0.id == id } }
 
+    // MARK: Demo
+
+    @ObservationIgnored private var demo = false
+
+    /// Sample data with no Firebase (see Demo). Writes apply in memory only.
+    func loadDemo() {
+        demo = true
+        habits = Demo.habits()
+        life = Demo.life
+        isLoaded = true
+        lifeLoaded = true
+    }
+
+    private func applyDemo(_ writes: [HabitWrite], habitID: String) {
+        guard let i = habits.firstIndex(where: { $0.id == habitID }) else { return }
+        habits[i] = habits[i].applying(CheckInResult(writes, .none))
+    }
+
     // MARK: Listening
 
     func start(uid: String?) {
@@ -170,6 +188,7 @@ final class HabitStore {
 
     /// Turns `HabitWrite`s into Firestore writes, matching lib/habits.ts.
     func apply(_ writes: [HabitWrite], habitID: String) {
+        if demo { return applyDemo(writes, habitID: habitID) }
         guard let uid, !writes.isEmpty else { return }
         let habitRef = habitsRef(uid).document(habitID)
         let completions = habitRef.collection("completions")

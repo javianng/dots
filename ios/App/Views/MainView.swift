@@ -27,11 +27,12 @@ enum MainTab: String, CaseIterable, Identifiable {
 struct MainView: View {
     @Environment(HabitStore.self) private var store
     @AppStorage("mainTab") private var tab: MainTab = .grid
-    @State private var showNew = false
-    @State private var showSettings = false
+    @State private var showNew = Demo.isOn && Demo.screen == "form"
+    @State private var showSettings = Demo.isOn && Demo.screen == "settings"
+    @State private var path: [String] = Demo.isOn && Demo.screen == "detail" ? ["workout"] : []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     if !store.isLoaded {
@@ -85,6 +86,9 @@ struct MainView: View {
             }
             .sheet(isPresented: $showNew) { HabitFormView(habit: nil) }
             .sheet(isPresented: $showSettings) { SettingsView() }
+        }
+        .onAppear {
+            if Demo.isOn, let raw = Demo.tab, let demoTab = MainTab(rawValue: raw) { tab = demoTab }
         }
     }
 }

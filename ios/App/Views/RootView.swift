@@ -9,7 +9,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if !FirebaseSetup.isConfigured {
+            if Demo.isOn {
+                if Demo.screen == "auth" { AuthView() } else { MainView() }
+            } else if !FirebaseSetup.isConfigured {
                 SetupNeededView()
             } else if auth.user == nil {
                 AuthView()
@@ -21,13 +23,14 @@ struct RootView: View {
         .tint(Theme.ink)
         .overlay(alignment: .top) { ToastView() }
         .task(id: auth.user?.uid) {
+            if Demo.isOn { return store.loadDemo() }
             store.start(uid: auth.user?.uid)
             if auth.user == nil { Reminders.cancelAll() }
         }
         .task(id: store.habits) {
             // Debounced: re-plan reminders once taps settle.
             try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled, auth.user != nil else { return }
+            guard !Task.isCancelled, auth.user != nil, !Demo.isOn else { return }
             await Reminders.reschedule(habits: store.habits)
         }
         .task(id: runningTimers) {

@@ -26,7 +26,7 @@ jobs:
         run: swift test --package-path ios/Packages/DotsCore
 
   app-build:
-    name: Build app for the simulator
+    name: Build app and take screenshots
     runs-on: macos-15
     timeout-minutes: 45
     defaults:
@@ -38,15 +38,61 @@ jobs:
         run: brew install xcodegen
       - name: Generate project
         run: xcodegen generate
+      - name: Pick a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          for runtime in sorted(devices, reverse=True):
+              if 'iOS' not in runtime: continue
+              for d in devices[runtime]:
+                  if d['name'] in ('iPhone 16', 'iPhone 16 Pro', 'iPhone 15'):
+                      print(d['udid']); sys.exit()
+          ")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          echo "Simulator: $UDID"
       - name: Build
         run: |
           set -o pipefail
           xcodebuild build \
             -project Dots.xcodeproj \
             -scheme Dots \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=$UDID" \
+            -derivedDataPath build \
             -skipPackagePluginValidation \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            | tee build.log | grep -E "error:|warning: unre|BUILD (SUCCEEDED|FAILED)" || true
+            | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
           grep -q "BUILD SUCCEEDED" build.log
+      - name: Screenshots (demo data)
+        run: |
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          APP=$(find build/Build/Products -name "Dots.app" -path "*iphonesimulator*" | head -1)
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+          mkdir -p shots
+          shoot() {
+            name=$1; shift
+            xcrun simctl terminate "$UDID" com.javianng.dots >/dev/null 2>&1 || true
+            xcrun simctl launch "$UDID" com.javianng.dots -demo "$@"
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          for appearance in light dark; do
+            xcrun simctl ui "$UDID" appearance "$appearance"
+            shoot "$appearance-1-grid" -demoTab grid
+            shoot "$appearance-2-list" -demoTab list
+            shoot "$appearance-3-compact" -demoTab compact
+            shoot "$appearance-4-life" -demoTab life
+            shoot "$appearance-5-detail" -demoTab grid -demoScreen detail
+            shoot "$appearance-6-form" -demoScreen form
+            shoot "$appearance-7-settings" -demoScreen settings
+            shoot "$appearance-8-auth" -demoScreen auth
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: ios/shots
+          if-no-files-found: ignore
