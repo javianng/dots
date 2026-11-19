@@ -177,7 +177,7 @@ struct ViewSwitcher: View {
                         .background {
                             if item == tab {
                                 Capsule()
-                                    .fill(Theme.card)
+                                    .fill(Theme.thumb)
                                     .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
                                     .matchedGeometryEffect(id: "thumb", in: thumb)
                             }

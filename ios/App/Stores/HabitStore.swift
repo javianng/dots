@@ -151,6 +151,7 @@ final class HabitStore {
     /// Recomputes habits (also call when the day changes: limits and streaks
     /// depend on what "today" is).
     func rebuild() {
+        if demo { return }
         let now = Date()
         let next = metas.map { HabitParser.habit($0, days: days[$0.id] ?? [:], now: now) }
         if next != habits { habits = next }

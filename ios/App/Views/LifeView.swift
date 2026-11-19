@@ -74,7 +74,7 @@ private struct LifeGrid: View {
                 context.fill(ahead, with: .color(Theme.ink.opacity(0.12)))
                 if stats.currentWeek < years * weeks {
                     let c = CGPoint(x: left + CGFloat(stats.weekOfYear) * cell + cell / 2, y: CGFloat(stats.ageYears) * cell + cell / 2)
-                    let nr = r * 1.4
+                    let nr = r * 1.7
                     context.fill(Path(ellipseIn: CGRect(x: c.x - nr, y: c.y - nr, width: nr * 2, height: nr * 2)), with: .color(Theme.accent))
                 }
             }

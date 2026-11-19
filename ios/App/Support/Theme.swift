@@ -33,6 +33,8 @@ enum Theme {
     static let mutedText = Color(light: "#5c5a55", dark: "#a6a39c")
     static let subtle = Color(light: "#8a8780", dark: "#77746e")
     static let border = Color(light: "#e3ded5", dark: "#34322f")
+    /// Selected segment in the floating switcher.
+    static let thumb = Color(light: "#ffffff", dark: "#3d3b38")
     static let accent = Color(light: "#e1602f", dark: "#f07a4f")
     static let accentText = Color(light: "#b4461c", dark: "#f07a4f")
     static let accentSoft = Color(light: "#f8e1d6", dark: "#3a2419")
