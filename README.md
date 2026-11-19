@@ -57,6 +57,45 @@ dots works without a connection:
   instead of reloading the page.
 - Pages are only precached in production builds (`npm run build && npm run start`), so test offline there.
 
+## MCP server (AI agents)
+
+dots has a remote [MCP](https://modelcontextprotocol.io) server, so an AI agent
+such as Claude can read and edit your habits by the same rules as the app.
+
+| Tool | What it does |
+| --- | --- |
+| `list_habits` | Every habit with today's status, progress and streak |
+| `get_habit` | One habit's settings and day-by-day log |
+| `log_habit` | Complete, add / set an amount, clear, skip or unskip a day |
+| `create_habit` | Add a habit (name only = daily check-off) |
+| `update_habit` | Change settings; a goal-type change converts past days like the app |
+| `delete_habit` | Delete a habit and its history |
+
+- **Endpoint**: `app/api/mcp/[secret]/route.ts` (stateless Streamable HTTP,
+  so it runs on Vercel as is). Tools: `lib/server/mcp-server.ts`; rules:
+  `lib/server/habit-logic.ts`; Firestore (Admin SDK): `lib/server/habit-store.ts`.
+  Habit docs are read with `lib/habit-model.ts`, shared with the app.
+- **One account**: it acts for `DOTS_USER` only, with admin access (Firestore
+  rules don't apply), so the secret is the only lock.
+- **Dates** are `YYYY-MM-DD` in your reminder time zone (Settings → Reminders),
+  else `DOTS_TIME_ZONE`, else Singapore.
+
+### Setup
+
+1. In Vercel → Project → Settings → Environment Variables, add (server-only,
+   no `NEXT_PUBLIC_`):
+   - `MCP_SECRET`: a random secret, e.g. `openssl rand -hex 32`
+   - `FIREBASE_SERVICE_ACCOUNT`: the same service account JSON as the
+     reminders secret
+   - `DOTS_USER`: the email you sign in to dots with
+2. Redeploy.
+3. In Claude → Settings → Connectors → **Add custom connector**, paste
+   `https://<your-domain>/api/mcp/<MCP_SECRET>`.
+
+Anyone with that URL can edit your habits: keep it private, and change
+`MCP_SECRET` (then the connector URL) if it leaks. Other MCP clients can call
+`https://<your-domain>/api/mcp/bearer` with `Authorization: Bearer <MCP_SECRET>`.
+
 ## Reminders (Web Push)
 
 dots can send a daily reminder if today's dots aren't filled in. It uses

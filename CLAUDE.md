@@ -51,5 +51,10 @@ This is **dots**, a habit-tracking app built on a `create-next-app` scaffold.
   goal; completion docs also carry `completed`, `skipped` and `slots`. Running timers
   are stored on the habit doc and finished by `TimerRunner` (`hooks/use-timer.tsx`).
   New Habit templates are in `lib/templates.ts`.
+- **MCP server**: `app/api/mcp/[secret]/route.ts` serves habit tools for AI agents
+  (`lib/server/mcp-server.ts`) over stateless Streamable HTTP, using the Admin SDK
+  for one account (`DOTS_USER`). Rules mirror `components/habit-form.tsx` and
+  `lib/check-in.ts` in `lib/server/habit-logic.ts`: keep them in step when those
+  change. Habit docs are parsed by `lib/habit-model.ts`, shared with `use-habits`.
 - **Toasts**: Sonner (`components/ui/sonner.tsx`, top-centre). Completing a habit calls
   `celebrateCompletion()` in `components/celebrate-toast.tsx`; haptics in `lib/haptics.ts`.
