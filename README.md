@@ -11,6 +11,12 @@ Each day is a dot. Fill it in, and let the pattern build itself.
 - **Hold** — a running streak, and a goal if you want one.
 - **Choose your view** — grid, list, or compact.
 
+## iPhone app
+
+A native SwiftUI app lives in [`ios/`](ios/README.md). It uses the same
+Firebase data, works fully offline and syncs when there's a connection, and
+schedules reminders on the phone so they arrive on time.
+
 ## Getting started
 
 ```bash

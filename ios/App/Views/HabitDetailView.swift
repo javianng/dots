@@ -12,8 +12,11 @@ struct HabitDetailView: View {
         Group {
             if let habit = store.habit(habitID) {
                 content(habit)
-            } else {
+            } else if store.isLoaded {
+                // Deleted (here or on another device): go back.
                 Color.clear.onAppear { dismiss() }
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .background(Theme.background.ignoresSafeArea())
