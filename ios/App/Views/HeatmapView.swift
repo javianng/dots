@@ -45,9 +45,14 @@ struct HeatmapView: View {
 
         if showLabels {
             var lastMonth = -1
+            var lastLabel = -10
             for (i, week) in columns.enumerated() {
                 let m = math.calendar.component(.month, from: week[0])
-                if m != lastMonth && i < columns.count - 1 {
+                // A month that starts a column or two into the map would
+                // collide with the next label: leave it out.
+                let nextChange = columns.dropFirst(i + 1).firstIndex { math.calendar.component(.month, from: $0[0]) != m } ?? columns.count
+                if m != lastMonth && i < columns.count - 1 && i - lastLabel >= 3 && nextChange - i >= 3 {
+                    lastLabel = i
                     let name = math.calendar.shortMonthSymbols[m - 1]
                     context.draw(
                         Text(name).font(.system(size: 10)).foregroundStyle(Theme.mutedText),

@@ -387,6 +387,7 @@ private struct StatsRow: View {
             }
             totalStat(total)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func totalStat(_ days: Int) -> Stat {
@@ -435,6 +436,7 @@ private struct Stat: View {
                 .frame(height: 4)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .card(padding: 14)
         .accessibilityElement(children: .combine)
     }
