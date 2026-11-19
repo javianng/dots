@@ -126,3 +126,36 @@ final class CheckInTests: XCTestCase {
         XCTAssertEqual(Labels.amount(2.5, locale: Fixture.en), "2.5")
     }
 }
+
+final class TodayTests: XCTestCase {
+    func testSectionsByTimeOfDay() {
+        var teeth = Fixture.habit { $0.parts = [.morning, .evening]; $0.completionsPerDay = 2 }
+        teeth.id = "teeth"
+        var read = Fixture.habit { $0.parts = [.evening] }
+        read.id = "read"
+        var any = Fixture.habit()
+        any.id = "any"
+        let sections = Today.sections([teeth, read, any], now: Fixture.now, math: Fixture.math)
+        XCTAssertEqual(sections.map(\.key), ["morning", "evening", "any"])
+        XCTAssertTrue(sections[0].isNow)
+        XCTAssertEqual(sections[0].items.first?.part, .morning)
+
+        teeth.slots["2026-11-19"] = [.morning]
+        let later = Today.sections([teeth, read], now: Fixture.now, math: Fixture.math)
+        XCTAssertEqual(later.map(\.key), ["evening"])
+        XCTAssertEqual(later[0].items.map(\.id), ["teeth", "read"])
+    }
+
+    func testNoTimesOfDayMeansOneSection() {
+        let sections = Today.sections([Fixture.habit()], now: Fixture.now, math: Fixture.math)
+        XCTAssertEqual(sections.count, 1)
+        XCTAssertNil(sections[0].label)
+    }
+
+    func testSummarySkipsRestDays() {
+        let habits = [Fixture.habit(done: ["2026-11-19"]), Fixture.habit(), Fixture.habit(schedule: .days([1]))]
+        let s = Today.summary(habits, now: Fixture.now, math: Fixture.math)
+        XCTAssertEqual(s.done, 1)
+        XCTAssertEqual(s.total, 2)
+    }
+}

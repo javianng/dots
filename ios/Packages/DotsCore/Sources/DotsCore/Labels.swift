@@ -129,9 +129,10 @@ public enum Labels {
     }
 }
 
-/// Times of day, for goal labels.
+/// Times of day and unit, for goal labels.
 public protocol PartsFields {
     var parts: [DayPart] { get }
+    var amountUnit: String { get }
 }
 
 extension Habit: PartsFields {}
