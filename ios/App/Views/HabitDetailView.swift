@@ -369,7 +369,9 @@ private struct StatsRow: View {
     let habit: Habit
 
     var body: some View {
-        let (streak, unit) = Rules.streak(habit)
+        let result = Rules.streak(habit)
+        let streak = result.value
+        let unit = result.unit
         let unitWord = unit == .time ? "in a row" : streak == 1 ? unit.rawValue : "\(unit.rawValue)s"
         let goalWord = unit == .time ? "in a row" : "\(unit.rawValue)s"
         let total = habit.history.values.filter { $0 }.count

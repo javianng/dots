@@ -128,7 +128,7 @@ struct EmptyStateView: View {
                 }
                 HStack(spacing: 6) {
                     Squircle().fill(Theme.subtle).frame(width: 28, height: 28)
-                    Squircle().strokeBorder(Theme.accent, style: StrokeStyle(lineWidth: 2, dash: [4, 3])).frame(width: 28, height: 28)
+                    Squircle().stroke(Theme.accent, style: StrokeStyle(lineWidth: 2, dash: [4, 3])).frame(width: 26, height: 26).frame(width: 28, height: 28)
                 }
             }
             VStack(spacing: 4) {
